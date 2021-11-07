@@ -1,9 +1,9 @@
-# ShadowRealm Polyfill
+# ShadowRealm API Polyfill
 
 
 ## ⬇️ Install
 ```
-npm i -S shadowrealm
+npm i -S shadowrealm-api
 ```
 
 
@@ -11,13 +11,13 @@ npm i -S shadowrealm
 ### In browser
 1. Po**n**yfill: non-invasive
 ```javascript
-import ShadowRealm from 'shadowrealm'
+import ShadowRealm from 'shadowrealm-api'
 
 const realm = new ShadowRealm();
 ```
 2. Po**l**yfill: patch up the global object
 ```javascript
-import 'shadowrealm/browser/polyfill'
+import 'shadowrealm-api/browser/polyfill'
 
 const realm = new ShadowRealm();
 ```

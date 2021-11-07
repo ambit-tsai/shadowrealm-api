@@ -1,7 +1,7 @@
 {
-  "name": "shadowrealm",
+  "name": "shadowrealm-api",
   "version": "0.1.0",
-  "description": "ShadowRealm polyfill",
+  "description": "ShadowRealm API polyfill",
   "author": {
     "name": "Ambit Tsai",
     "email": "ambit_tsai@qq.com"
@@ -13,11 +13,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ambit-tsai/shadowrealm.git"
+    "url": "git+https://github.com/ambit-tsai/shadowrealm-api.git"
   },
-  "homepage": "https://github.com/ambit-tsai/shadowrealm#readme",
+  "homepage": "https://github.com/ambit-tsai/shadowrealm-api#readme",
   "bugs": {
-    "url": "https://github.com/ambit-tsai/shadowrealm/issues"
+    "url": "https://github.com/ambit-tsai/shadowrealm-api/issues"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^8.3.0",
@@ -32,6 +32,7 @@
     "ponyfill",
     "realm",
     "realms",
+    "shadowrealm",
     "shim"
   ]
 }
