@@ -175,8 +175,8 @@ function createShadowRealm(intCtx: typeof initContext, waitForGC: typeof waitFor
      * https://tc39.es/proposal-shadowrealm
      */
     return class ShadowRealm {
-        private __eval!: typeof eval;
-        private __Function!: FunctionConstructor;
+        __eval!: typeof eval;
+        __Function!: FunctionConstructor;
     
         constructor() {
             if (!(this instanceof ShadowRealm)) {
