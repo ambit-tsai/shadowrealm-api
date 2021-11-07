@@ -77,7 +77,7 @@ type GlobalContext = Omit<typeof window, 'globalThis'> & {
 
 
 const codeOfSafeFunction = function Function() {
-    const fn = window.Function.apply({}, arguments);
+    const fn = window.Function.apply({}, arguments as any);
     return window.Function(`with(globalThis)return ${fn.toString()}.apply(globalThis, arguments)`);
 }.toString();
 
@@ -87,7 +87,7 @@ function createSafeFunction(contentWindow: GlobalContext) {
 
 
 const codeOfSafeEval = {
-    eval(text) {
+    eval(text: string) {
         const params = Object.defineProperty({}, 'arguments', {
             get: () => {
                 throw new ReferenceError('arguments is not defined');
@@ -122,8 +122,8 @@ const waitForGarbageCollection: (
 ) => void = window.FinalizationRegistry
     ? (realm, iframe, context) => {
         // TODO: need test
-        const registry = new context.FinalizationRegistry(iframe => {
-            iframe.parentNode.removeChild(iframe);
+        const registry = new context.FinalizationRegistry((iframe: HTMLIFrameElement) => {
+            iframe.parentNode!.removeChild(iframe);
         });
         registry.register(realm, iframe);
     }
@@ -134,18 +134,18 @@ function initContext(contentWindow: GlobalContext) {
     const context: RealmContext = Object();
     for (const key of Object.getOwnPropertyNames(contentWindow)) {
         const isExisted = globalProperties.indexOf(key as any) !== -1;
-        const descriptor = Object.getOwnPropertyDescriptor(contentWindow, key);
+        const descriptor = <PropertyDescriptor> Object.getOwnPropertyDescriptor(contentWindow, key);
         if (isExisted) {
             Object.defineProperty(context, key, descriptor);
         }
         if (descriptor.configurable) {
             // Some global props were used in `createShadowRealm`, safe `eval` or safe `Function`
             if (exclusionList.indexOf(key) === -1) {
-                delete contentWindow[key];
+                delete contentWindow[key as any];
             }
         } else if (!isExisted) {
             // Block properties that cannot be deleted
-            let val;
+            let val: any;
             Object.defineProperty(context, key, {
                 configurable: false,
                 enumerable: true,
@@ -175,8 +175,8 @@ function createShadowRealm(intCtx: typeof initContext, waitForGC: typeof waitFor
      * https://tc39.es/proposal-shadowrealm
      */
     return class ShadowRealm {
-        private __eval: typeof eval;
-        private __Function: FunctionConstructor;
+        private __eval!: typeof eval;
+        private __Function!: FunctionConstructor;
     
         constructor() {
             if (!(this instanceof ShadowRealm)) {
@@ -204,7 +204,7 @@ function createShadowRealm(intCtx: typeof initContext, waitForGC: typeof waitFor
             if (bindingName !== undefined) {
                 bindingName = String(bindingName);
             }
-            return this.__Function('m', 'return import(m)')(specifier).then(module => {
+            return this.__Function('m', 'return import(m)')(specifier).then((module: any) => {
                 return bindingName ? module[bindingName] : module;
             });
         }

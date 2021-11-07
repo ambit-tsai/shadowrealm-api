@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "target": "ES5",
+        "lib": ["DOM", "ESNext"],
+        "moduleResolution": "node",
+        "declaration": true,
+        "declarationDir": "dist/browser"
+    },
+    "include": [
+        "src/browser/**/*"
+    ]
+}
