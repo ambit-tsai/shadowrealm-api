@@ -71,18 +71,17 @@ type RealmContext = Record<GlobalProperty, any> & {
     window: never;
     ShadowRealm: ShadowRealmConstructor;
 };
-type GlobalContext = Omit<typeof window, 'globalThis'> & {
-    globalThis: RealmContext;
+type GlobalObject = typeof window & {
+    $createSafeFn: Function;
 };
 
 
 const codeOfCreateFunction = function (realmContext: RealmContext) {
+    const { $createSafeFn } = window as GlobalObject;
     const RawFunction = Function;
     return function Function() {
-        const rawFn = RawFunction.apply({}, arguments as any);
-        rawFn.toString = RawFunction.toString;  // defensive programming
-        const wrapFn = RawFunction(`with(this)return function(){'use strict';return ${rawFn.toString()}}`);
-        wrapFn.call = RawFunction.call;
+        const rawFn = $createSafeFn(arguments);
+        const wrapFn = $createSafeFn([`with(this)return function(){'use strict';return ${rawFn.toString()}}`]);
         const safeFn: Function = wrapFn.call(realmContext)();
         safeFn.apply = RawFunction.apply;
         return function (this: any) {
@@ -92,43 +91,52 @@ const codeOfCreateFunction = function (realmContext: RealmContext) {
     };
 }.toString();
 
-function createSafeFunction(contentWindow: GlobalContext, realmContext: RealmContext) {
+function createSafeFunction(contentWindow: GlobalObject, realmContext: RealmContext) {
     return contentWindow.Function(`return ${codeOfCreateFunction}(this)`).call(realmContext);
 }
 
 
-const codeOfSafeEval = {
-    eval(text: string) {
-        const params = Object.defineProperty({}, 'arguments', {
-            get: () => {
-                throw new ReferenceError('arguments is not defined');
-            },
-        });
-        const code = Function(text).toString().replace(/^[^(]+\(/, 'with(this');
-        return Function("return eval('with(arguments[0])'+arguments[1])").call(globalThis, params, code);
-    },
-}.eval.toString();  // fix: TS1215: Invalid use of 'eval'
+const codeOfCreateEval = function (realmContext: RealmContext, KEY: any) {
+    const { $createSafeFn } = window as GlobalObject;
+    return {
+        eval(x: string) {
+            const safeFn = $createSafeFn([`with(this)return eval(arguments[0])`]);
+            realmContext.eval = KEY;    // use raw eval
+            return safeFn.call(realmContext, '"use strict";' + x);
+        },
+    }.eval; // fix: TS1215: Invalid use of 'eval'
+}.toString();
 
-function createSafeEval(contentWindow: GlobalContext) {
-    return contentWindow.Function(`return ${codeOfSafeEval}`)();
+/** KEY */
+const KEY = {};
+
+function createSafeEval(contentWindow: GlobalObject, realmContext: RealmContext) {
+    return contentWindow.Function(`return ${codeOfCreateEval}(this[0], this[1])`).call([realmContext, KEY]);
 }
 
 
-const exclusionList = [
-    'eval',
-    'FinalizationRegistry',
-    'Object',
-    'ReferenceError',
-    'String',
-    'TypeError',
-    'console',  // FIXME:
-];
+/** defensive programming */
+function safeOp(contentWindow: GlobalObject) {
+    const { Function } = contentWindow;
+    const { apply, call, toString } = Function;
+    Function.apply = apply; // Function.prototype.apply => Function.apply
+    contentWindow.$createSafeFn = function (args: IArguments | string[]) {
+        const fn = Function.apply(this, args as string[]);
+        fn.call = call;
+        fn.toString = toString;
+        return fn;
+    };
+    // 
+    Object.defineProperty(String.prototype, 'replace', {
+        configurable: false,
+    });
+}
+
 
 const waitForGarbageCollection: (
     realm: InstanceType<ShadowRealmConstructor>,
     iframe: HTMLIFrameElement,
     context: RealmContext,
-    // @ts-ignore
 ) => void = window.FinalizationRegistry
     ? (realm, iframe, context) => {
         // TODO: need test
@@ -139,54 +147,64 @@ const waitForGarbageCollection: (
     }
     : () => {};
 
-function initContext(contentWindow: GlobalContext) {
-    const { Function } = contentWindow;
-    Function.apply = Function.apply;    // Function.prototype.apply => Function.apply
-    Function.call = Function.call;
-    Function.toString = Function.toString;
 
-    const { Object, ReferenceError } = contentWindow;
+function initContext(contentWindow: GlobalObject) {
+    safeOp(contentWindow);
+    
+    const { Object } = contentWindow;
+    const { defineProperty } = Object;
+    const rawEval = contentWindow.eval;
     const context: RealmContext = Object();
     const SafeFunction = createSafeFunction(contentWindow, context);
+    const safeEval = createSafeEval(contentWindow, context);
+    const SafeShadowRealm = createSafeShadowRealm(contentWindow);
 
     for (const key of Object.getOwnPropertyNames(contentWindow)) {
         const isExisted = globalProperties.indexOf(key as any) !== -1;
         const descriptor = <PropertyDescriptor> Object.getOwnPropertyDescriptor(contentWindow, key);
-        if (isExisted) {
-            Object.defineProperty(context, key, descriptor);
+        if (key === 'eval') {
+            let isInnerCall = false;
+            defineProperty(context, key, {
+                get() {
+                    if (isInnerCall) {
+                        isInnerCall = false;
+                        return rawEval;
+                    }
+                    return safeEval;
+                },
+                set(val) {
+                    if (val === KEY) isInnerCall = true;
+                },
+            });
+        } else if (isExisted) {
+            defineProperty(context, key, descriptor);
         }
         if (descriptor.configurable) {
-            // Some global props were used in `createShadowRealm`, safe `eval` or safe `Function`
-            if (exclusionList.indexOf(key) === -1) {
-                delete contentWindow[key as any];
-            }
+            delete contentWindow[key as any];
         } else if (!isExisted) {
             // Block properties that cannot be deleted
-            let val: any;
-            Object.defineProperty(context, key, {
-                configurable: false,
-                enumerable: true,
-                get() {
-                    if (val) return val;
-                    throw new ReferenceError(`${key} is not defined`);
-                },
-                set: v => val = v,
+            defineProperty(context, key, {
+                value: undefined,
             });
         }
     }
-    contentWindow.globalThis = context; // this `globalThis` was used in safe `eval` and `Function`
     context.globalThis = context;
-    context.eval = createSafeEval(contentWindow);
     context.Function = SafeFunction;
-    Object.defineProperty(context, 'ShadowRealm', {
+    defineProperty(context, 'ShadowRealm', {
         configurable: true,
         writable: true,
-        value: createSafeShadowRealm(contentWindow),
+        value: SafeShadowRealm,
     });
     return context;
 }
 
-function createShadowRealm(intCtx: typeof initContext, waitForGC: typeof waitForGarbageCollection) {
+
+function createShadowRealm(
+    contentWindow: GlobalObject,
+    intCtx: typeof initContext,
+    waitForGC: typeof waitForGarbageCollection,
+) {
+    const { TypeError, document, Object, String } = contentWindow;
     /** 
      * ShadowRealm Polyfill Class
      * https://tc39.es/proposal-shadowrealm
@@ -228,10 +246,12 @@ function createShadowRealm(intCtx: typeof initContext, waitForGC: typeof waitFor
     }
 }
 
-const codeOfSafeShadowRealm = createShadowRealm.toString();
 
-export function createSafeShadowRealm(contentWindow: GlobalContext) {
-    return contentWindow.Function(`return ${codeOfSafeShadowRealm}.apply({}, arguments)`)(
+const codeOfCreateShadowRealm = createShadowRealm.toString();
+
+export function createSafeShadowRealm(contentWindow: GlobalObject) {
+    return contentWindow.Function(`return ${codeOfCreateShadowRealm}.apply({}, arguments)`)(
+        contentWindow,
         initContext,
         waitForGarbageCollection,
     );
