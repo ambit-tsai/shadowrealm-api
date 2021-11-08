@@ -76,13 +76,24 @@ type GlobalContext = Omit<typeof window, 'globalThis'> & {
 };
 
 
-const codeOfSafeFunction = function Function() {
-    const fn = window.Function.apply({}, arguments as any);
-    return window.Function(`with(globalThis)return ${fn.toString()}.apply(globalThis, arguments)`);
+const codeOfCreateFunction = function (realmContext: RealmContext) {
+    const RawFunction = Function;
+    return function Function() {
+        const rawFn = RawFunction.apply({}, arguments as any);
+        rawFn.toString = RawFunction.toString;  // defensive programming
+        const wrapFn = RawFunction(`with(this)return function(){'use strict';return ${rawFn.toString()}}`);
+        wrapFn.call = RawFunction.call;
+        const safeFn: Function = wrapFn.call(realmContext)();
+        safeFn.apply = RawFunction.apply;
+        return function (this: any) {
+            const ctx = this === window ? undefined : this;
+            return safeFn.apply(ctx, arguments);
+        };
+    };
 }.toString();
 
-function createSafeFunction(contentWindow: GlobalContext) {
-    return contentWindow.Function(`return ${codeOfSafeFunction}`)();
+function createSafeFunction(contentWindow: GlobalContext, realmContext: RealmContext) {
+    return contentWindow.Function(`return ${codeOfCreateFunction}(this)`).call(realmContext);
 }
 
 
@@ -106,7 +117,6 @@ function createSafeEval(contentWindow: GlobalContext) {
 const exclusionList = [
     'eval',
     'FinalizationRegistry',
-    'Function',
     'Object',
     'ReferenceError',
     'String',
@@ -130,8 +140,15 @@ const waitForGarbageCollection: (
     : () => {};
 
 function initContext(contentWindow: GlobalContext) {
+    const { Function } = contentWindow;
+    Function.apply = Function.apply;    // Function.prototype.apply => Function.apply
+    Function.call = Function.call;
+    Function.toString = Function.toString;
+
     const { Object, ReferenceError } = contentWindow;
     const context: RealmContext = Object();
+    const SafeFunction = createSafeFunction(contentWindow, context);
+
     for (const key of Object.getOwnPropertyNames(contentWindow)) {
         const isExisted = globalProperties.indexOf(key as any) !== -1;
         const descriptor = <PropertyDescriptor> Object.getOwnPropertyDescriptor(contentWindow, key);
@@ -160,7 +177,7 @@ function initContext(contentWindow: GlobalContext) {
     contentWindow.globalThis = context; // this `globalThis` was used in safe `eval` and `Function`
     context.globalThis = context;
     context.eval = createSafeEval(contentWindow);
-    context.Function = createSafeFunction(contentWindow);
+    context.Function = SafeFunction;
     Object.defineProperty(context, 'ShadowRealm', {
         configurable: true,
         writable: true,
