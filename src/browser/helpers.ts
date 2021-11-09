@@ -55,6 +55,33 @@ function createEval(contentWindow: WindowObject, realmContext: RealmContext): ty
 }
 
 
+function defineEval(
+    Object: ObjectConstructor,
+    realmContext: RealmContext,
+    rawEval: typeof eval,
+    newEval: typeof eval,
+    NEED_RAW_EVAL: any,
+) {
+    let isInnerCall = false;
+    Object.defineProperty(realmContext, 'eval', {
+        get() {
+            if (isInnerCall) {
+                isInnerCall = false;
+                return rawEval; // used by safe eval
+            }
+            return newEval;
+        },
+        set(val) {
+            if (val === NEED_RAW_EVAL) {
+                isInnerCall = true;
+            }
+        },
+    });
+}
+
+const codeOfDefineEval = `(${defineEval.toString()}).apply({}, arguments)`;
+
+
 /**
  * Defensive operation
  */
@@ -71,25 +98,10 @@ function onBeforeInit(contentWindow: WindowObject) {
 }
 
 
-const waitForGarbageCollection: (
-    realm: InstanceType<ShadowRealmConstructor>,
-    iframe: HTMLIFrameElement,
-    context: RealmContext,
-) => void = window.FinalizationRegistry
-    ? (realm, iframe, context) => {
-        // TODO: need test
-        const registry = new context.FinalizationRegistry((iframe: HTMLIFrameElement) => {
-            iframe.parentNode!.removeChild(iframe);
-        });
-        registry.register(realm, iframe);
-    }
-    : () => {};
-
-
 function initRealmContext(contentWindow: WindowObject) {
     onBeforeInit(contentWindow);
     
-    const { Object } = contentWindow;
+    const { Object, Function } = contentWindow;
     const { defineProperty } = Object;
     const rawEval = contentWindow.eval;
     const realmContext: RealmContext = Object();
@@ -101,19 +113,13 @@ function initRealmContext(contentWindow: WindowObject) {
         const isExisted = GLOBAL_PROPERTY_KEYS.indexOf(key as any) !== -1;
         const descriptor = <PropertyDescriptor> Object.getOwnPropertyDescriptor(contentWindow, key);
         if (key === 'eval') {
-            let isInnerCall = false;
-            defineProperty(realmContext, key, {
-                get() {
-                    if (isInnerCall) {
-                        isInnerCall = false;
-                        return rawEval;                                 // used by safe eval
-                    }
-                    return newEval;
-                },
-                set(val) {
-                    if (val === NEED_RAW_EVAL) isInnerCall = true;
-                },
-            });
+            Function(codeOfDefineEval)(
+                Object,
+                realmContext,
+                rawEval,
+                newEval,
+                NEED_RAW_EVAL
+            );
         } else if (isExisted) {
             defineProperty(realmContext, key, descriptor);              // copy to new context
         }
@@ -185,6 +191,21 @@ function createSafeShadowRealm(
 
 
 const codeOfCreateSafeShadowRealm = `return ${createSafeShadowRealm.toString()}.apply({}, arguments)`;
+
+const waitForGarbageCollection: (
+    realm: InstanceType<ShadowRealmConstructor>,
+    iframe: HTMLIFrameElement,
+    context: RealmContext,
+) => void = window.FinalizationRegistry
+    ? (realm, iframe, context) => {
+        // TODO: need test
+        const registry = new context.FinalizationRegistry((iframe: HTMLIFrameElement) => {
+            iframe.parentNode!.removeChild(iframe);
+        });
+        registry.register(realm, iframe);
+    }
+    : () => {};
+
 
 export function createShadowRealm(contentWindow: WindowObject): ShadowRealmConstructor {
     return contentWindow.Function(codeOfCreateSafeShadowRealm)(
