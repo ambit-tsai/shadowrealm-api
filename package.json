@@ -1,6 +1,6 @@
 {
   "name": "shadowrealm-api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "ShadowRealm API polyfill",
   "author": {
     "name": "Ambit Tsai",
