@@ -168,14 +168,16 @@ function createSafeShadowRealm(
             return this.__eval(sourceText);
         }
     
-        importValue(specifier: string, bindingName?: string): Promise<any> {
+        importValue(specifier: string, bindingName: string): Promise<any> {
             specifier = String(specifier);
             if (bindingName !== undefined) {
                 bindingName = String(bindingName);
             }
             return this.__Function('m', 'return import(m)')(specifier).then((module: any) => {
-                // TODO: return module.default if bindingName is empty?
-                return bindingName ? module[bindingName] : module;
+                if (!(bindingName in module)) {
+                    throw new TypeError(`The module does not export "${bindingName}"`);
+                }
+                return module[bindingName];
             });
         }
     }
