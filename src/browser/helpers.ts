@@ -140,12 +140,13 @@ function initRealmContext(contentWindow: WindowObject) {
 }
 
 
-function createSafeShadowRealm(
-    contentWindow: WindowObject,
-    intCtx: typeof initRealmContext,
-    waitForGC: typeof waitForGarbageCollection,
-) {
-    const { TypeError, document, Object: { defineProperty }, String } = contentWindow;
+function createSafeShadowRealm(intCtx: typeof initRealmContext, waitForGC: typeof waitForGarbageCollection) {
+    const {
+        TypeError,
+        document,
+        Object: { defineProperty },
+        String,
+    } = window;
     /** 
      * ShadowRealm Polyfill Class
      * https://tc39.es/proposal-shadowrealm
@@ -209,7 +210,6 @@ const waitForGarbageCollection: (
 
 export function createShadowRealm(contentWindow: WindowObject): ShadowRealmConstructor {
     return contentWindow.Function(codeOfCreateSafeShadowRealm)(
-        contentWindow,
         initRealmContext,
         waitForGarbageCollection,
     );
