@@ -152,8 +152,8 @@ function createSafeShadowRealm(intCtx: typeof initRealmContext, waitForGC: typeo
      * https://tc39.es/proposal-shadowrealm
      */
     return class ShadowRealm {
-        __eval!: typeof eval;
-        __Function!: FunctionConstructor;
+        __eval?: typeof eval;
+        __import?: Function;
     
         constructor() {
             if (!(this instanceof ShadowRealm)) {
@@ -164,7 +164,9 @@ function createSafeShadowRealm(intCtx: typeof initRealmContext, waitForGC: typeo
             document.head.appendChild(iframe);
             const context = intCtx(iframe.contentWindow as WindowObject);
             defineProperty(this, '__eval', { value: context.eval });
-            defineProperty(this, '__Function', { value: context.Function });
+            defineProperty(this, '__import', {
+                value: context.Function('m', 'return import(m)'),
+            });
             waitForGC(this, iframe, context);
         }
     
@@ -172,7 +174,7 @@ function createSafeShadowRealm(intCtx: typeof initRealmContext, waitForGC: typeo
             if (typeof sourceText !== 'string') {
                 throw new TypeError('Cannot call evaluate with non-string');
             }
-            return this.__eval(sourceText);
+            return this.__eval!(sourceText);
         }
     
         importValue(specifier: string, bindingName: string): Promise<any> {
@@ -180,7 +182,7 @@ function createSafeShadowRealm(intCtx: typeof initRealmContext, waitForGC: typeo
             if (bindingName !== undefined) {
                 bindingName = String(bindingName);
             }
-            return this.__Function('m', 'return import(m)')(specifier).then((module: any) => {
+            return this.__import!(specifier).then((module: any) => {
                 if (!(bindingName in module)) {
                     throw new TypeError(`The module does not export "${bindingName}"`);
                 }
