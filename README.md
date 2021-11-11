@@ -52,7 +52,8 @@ All code evaluated inside a ShadowRealm runs in strict mode
 |Node.js|Chrome|Firefox|IE|Edge|Opera|Safari|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 |8.5.0|63|67|-|79|50|11.1|
-***Reason:*** `import()` has a poor compatibility
+
+*Reason:* `import()` has a poor compatibility
 
 
 ## Contact
