@@ -1,7 +1,7 @@
 {
   "name": "shadowrealm-api",
-  "version": "0.2.0",
-  "description": "ShadowRealm API polyfill",
+  "version": "0.3.0",
+  "description": "ShadowRealm polyfill for node.js and browser",
   "author": {
     "name": "Ambit Tsai",
     "email": "ambit_tsai@qq.com"

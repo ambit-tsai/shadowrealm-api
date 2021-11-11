@@ -5,9 +5,9 @@
         "strict": true,
         "moduleResolution": "node",
         "declaration": true,
-        "declarationDir": "dist/browser"
+        "declarationDir": "dist"
     },
     "include": [
-        "src/browser/**/*"
-    ]
+        "src/**/*"
+    ],
 }
