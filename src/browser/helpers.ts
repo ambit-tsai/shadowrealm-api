@@ -39,11 +39,11 @@ function createFunction(contentWindow: WindowObject, realmContext: RealmContext)
 
 function createSafeEval(realmContext: RealmContext, NEED_RAW_EVAL: any) {
     const { _createReliableFn } = window as WindowObject;
-    const safeFn = _createReliableFn(['with(this)return eval(arguments[0])']);
+    const safeFn = _createReliableFn([`with(this)return eval('"use strict";' + arguments[0])`]);
     return {
         eval(x: string) {
             realmContext.eval = NEED_RAW_EVAL;  // use raw eval
-            return safeFn.call(realmContext, `'use strict';${x}`);
+            return safeFn.call(realmContext, x);
         },
     }.eval; // fix: TS1215: Invalid use of 'eval'
 }
@@ -153,7 +153,7 @@ function createSafeShadowRealm(intCtx: typeof initRealmContext, waitForGC: typeo
      */
     return class ShadowRealm {
         __eval?: typeof eval;
-        __import?: Function;
+        __import?: (x: string) => Promise<any>;
     
         constructor() {
             if (!(this instanceof ShadowRealm)) {
