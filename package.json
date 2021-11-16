@@ -1,6 +1,6 @@
 {
   "name": "shadowrealm-api",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "ShadowRealm polyfill for node.js and browser",
   "author": {
     "name": "Ambit Tsai",

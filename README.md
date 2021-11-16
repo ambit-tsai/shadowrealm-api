@@ -22,6 +22,7 @@ import 'shadowrealm-api/browser/polyfill'
 
 const realm = new ShadowRealm();
 ```
+> Limitations: all code evaluated inside a ShadowRealm runs in strict mode
 
 ### For node.js
 1. Ponyfill
@@ -38,10 +39,6 @@ const realm = new ShadowRealm();
 ```
 
 
-## Limitations
-All code evaluated inside a ShadowRealm runs in strict mode
-
-
 ## Compatibility
 ### Without `importValue`
 |Node.js|Chrome|Firefox|IE|Edge|Opera|Safari|
@@ -53,7 +50,7 @@ All code evaluated inside a ShadowRealm runs in strict mode
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 |8.5.0|63|67|-|79|50|11.1|
 
-*Reason:* `import()` has a poor compatibility
+*Reason:* `import()` has a poor compatibility. (Maybe it could be replaced by `fetch` or `XMLHttpRequest`)
 
 
 ## Contact
