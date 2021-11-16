@@ -1,7 +1,3 @@
-/** Key to get raw eval */
-export const NEED_RAW_EVAL = {};
-
-
 /** The global properties of ECMAScript 2021  */
 export const GLOBAL_PROPERTY_KEYS = [
     'globalThis',
@@ -67,6 +63,4 @@ type GetTupleElementType<T> = T extends { [key: number]: infer U } ? U : never;
 
 export type GlobalPropertyKey = GetTupleElementType<typeof GLOBAL_PROPERTY_KEYS>;
 
-export type WindowObject = typeof window & {
-    _createReliableFn: (args: IArguments | string[]) => Function;
-};
+export type WindowObject = typeof window;
