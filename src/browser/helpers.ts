@@ -1,4 +1,4 @@
-import { GLOBAL_PROPERTY_KEYS, GlobalPropertyKey, WindowObject } from './constants';
+import { GLOBAL_PROPERTY_KEYS, GlobalPropertyKey, WindowObject, getWrappedValue } from './constants';
 
 export type ShadowRealmConstructor = ReturnType<typeof createSafeShadowRealm>; 
 
@@ -17,6 +17,7 @@ type RealmContext = {
 const utils = {
     createShadowRealm,
     createRealmContext,
+    getWrappedValue,
     GLOBAL_PROPERTY_KEYS,
 };
 
@@ -30,7 +31,7 @@ export function createShadowRealm(contentWindow: WindowObject): ShadowRealmConst
 }
 
 
-function createSafeShadowRealm({ createRealmContext }: Utils) {
+function createSafeShadowRealm({ createRealmContext, getWrappedValue }: Utils) {
     const {
         FinalizationRegistry,
         TypeError,
@@ -56,6 +57,7 @@ function createSafeShadowRealm({ createRealmContext }: Utils) {
     return class ShadowRealm {
         __eval?: typeof eval;
         __import?: (x: string) => Promise<any>;
+        __ctx: any;
     
         constructor() {
             if (!(this instanceof ShadowRealm)) {
@@ -65,6 +67,7 @@ function createSafeShadowRealm({ createRealmContext }: Utils) {
             iframe.name = 'ShadowRealm';
             document.head.appendChild(iframe);
             const context = createRealmContext(iframe.contentWindow as WindowObject);
+            defineProperty(this, '__ctx', { value: context });
             defineProperty(this, '__eval', { value: context.eval });
             defineProperty(this, '__import', {
                 value: context.Function('m', 'return import(m)'),
@@ -76,7 +79,8 @@ function createSafeShadowRealm({ createRealmContext }: Utils) {
             if (typeof sourceText !== 'string') {
                 throw new TypeError('evaluate expects a string');
             }
-            return this.__eval!(sourceText);
+            const result = this.__eval!(sourceText);
+            return getWrappedValue(window, result, this.__ctx);
         }
     
         importValue(specifier: string, bindingName: string): Promise<any> {
@@ -88,7 +92,7 @@ function createSafeShadowRealm({ createRealmContext }: Utils) {
                 if (!(bindingName in module)) {
                     throw new TypeError(`${specifier} has no export named ${bindingName}`);
                 }
-                return module[bindingName];
+                return getWrappedValue(window, module[bindingName], this.__ctx);
             });
         }
     }

@@ -64,3 +64,38 @@ type GetTupleElementType<T> = T extends { [key: number]: infer U } ? U : never;
 export type GlobalPropertyKey = GetTupleElementType<typeof GLOBAL_PROPERTY_KEYS>;
 
 export type WindowObject = typeof window;
+
+
+export function getWrappedValue<T>(callerRealm: any, value: T, targetRealm: any): T {
+    if (typeof value === 'function') {
+        return createWrappedFunction(callerRealm, value, targetRealm);
+    } else if (typeof value === 'object' && value) {
+        throw new TypeError('Cross-Realm Error: Evaluation result is not a primitive value');
+    }
+    return value;
+}
+
+function wrappedFunction(this: any) {
+    // @ts-ignore: `params` is in parent scope
+    const { getWrappedValue, callerRealm, targetFunction, targetRealm } = params;
+    const wrappedArgs: any[] = [];
+    for (let i = 0, { length } = arguments; i < length; ++i) {
+        const wrappedValue = getWrappedValue(targetRealm, arguments[i], callerRealm);
+        wrappedArgs.push(wrappedValue);
+    }
+    // TODO: Does `this` need wrap?
+    // TODO: It's risky to use `apply` directly
+    const result = targetFunction.apply(targetRealm, wrappedArgs);
+    return getWrappedValue(callerRealm, result, targetRealm);
+}
+
+const codeOfWrappedFunction = `return ${wrappedFunction.toString()}`;
+
+function createWrappedFunction(callerRealm: WindowObject, targetFunction: Function, targetRealm: any) {
+    return callerRealm.Function('params', codeOfWrappedFunction)({
+        getWrappedValue,
+        callerRealm,
+        targetFunction,
+        targetRealm,
+    });
+}
