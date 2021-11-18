@@ -1,4 +1,4 @@
-import { GLOBAL_PROPERTY_KEYS, GlobalPropertyKey, WindowObject, getWrappedValue } from './constants';
+import { GLOBAL_PROPERTY_KEYS, GlobalPropertyKey, WindowObject, getWrappedValue } from './utils';
 
 export type ShadowRealmConstructor = ReturnType<typeof createSafeShadowRealm>; 
 
