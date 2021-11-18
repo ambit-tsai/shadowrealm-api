@@ -70,7 +70,7 @@ export function getWrappedValue<T>(callerRealm: any, value: T, targetRealm: any)
     if (typeof value === 'function') {
         return createWrappedFunction(callerRealm, value, targetRealm);
     } else if (typeof value === 'object' && value) {
-        throw new TypeError('Cross-Realm Error: Evaluation result is not a primitive value');
+        throw new TypeError('value must be primitive or callable');
     }
     return value;
 }
