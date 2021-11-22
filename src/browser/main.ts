@@ -98,21 +98,30 @@ function createRealmRecordInContext({ createShadowRealm, GLOBAL_PROPERTY_KEYS, s
 
     if (Symbol.unscopables) {
         defineProperty(globalObject, Symbol.unscopables, {
-            value: {},
+            value: Object.create(null),
+        });
+    }
+    // Intercept the props of EventTarget.prototype
+    for (const key of getOwnPropertyNames(EventTarget.prototype)) {
+        defineProperty(globalObject, key, {
+            writable: true,
+            value: key === 'constructor' ? Object.prototype.constructor : undefined,
         });
     }
 
-    for (const key of getOwnPropertyNames(win)) {
+    for (const key of getOwnPropertyNames(win) as any[]) {
         const descriptor = <PropertyDescriptor> getOwnPropertyDescriptor(win, key);
         defineProperty(intrinsics, key, descriptor);
-        const isExisted = GLOBAL_PROPERTY_KEYS.indexOf(key as any) !== -1;
+        const isExisted = GLOBAL_PROPERTY_KEYS.indexOf(key) !== -1;
         if (key === 'eval') {
             defineEval();
         } else if (isExisted) {
             defineProperty(globalObject, key, descriptor);  // copy to new global object
         }
         if (descriptor.configurable) {
-            delete win[key as any];
+            delete win[key];
+        } else if (descriptor.writable) {
+            win[key] = undefined as any;
         } else if (!isExisted) {
             // Intercept properties that cannot be deleted
             defineProperty(globalObject, key, {
@@ -124,18 +133,6 @@ function createRealmRecordInContext({ createShadowRealm, GLOBAL_PROPERTY_KEYS, s
     // @ts-ignore: `globalThis` is writable
     globalObject.globalThis = globalObject;
     globalObject.Function = createFunction();
-
-    // Intercept the props of EventTarget.prototype
-    const { prototype } = intrinsics.EventTarget;
-    for (const key of getOwnPropertyNames(prototype)) {
-        if (!(key in globalObject)) {
-            defineProperty(globalObject, key, {
-                writable: true,
-                value: key === 'constructor' ? Object.prototype.constructor : undefined,
-            });
-        }
-    }
-
     return {
         intrinsics,
         globalObject,
