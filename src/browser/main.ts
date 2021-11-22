@@ -29,9 +29,10 @@ function createShadowRealmInContext({ createRealmRecord, waitForGarbageCollectio
         String,
     } = window;
     const globalRealmRec = {
-        intrinsics: window,
+        intrinsics: { Function, TypeError },
         globalObject: window,
-    };
+    } as RealmRecord;
+    
     return class ShadowRealm {
         __realm?: RealmRecord;
         __import?: (x: string) => Promise<any>;
