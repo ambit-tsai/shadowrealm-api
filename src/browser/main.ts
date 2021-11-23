@@ -5,7 +5,6 @@ export type ShadowRealmConstructor = ReturnType<typeof createShadowRealmInContex
 
 const utils = {
     createRealmRecord,
-    waitForGarbageCollection,
     getWrappedValue,
     createShadowRealm,
     GLOBAL_PROPERTY_KEYS,
@@ -21,15 +20,14 @@ export function createShadowRealm(contentWindow: GlobalObject): ShadowRealmConst
     return contentWindow.eval(codeOfCreateShadowRealm)(utils);
 }
 
-function createShadowRealmInContext({ createRealmRecord, waitForGarbageCollection, getWrappedValue }: Utils) {
+function createShadowRealmInContext({ createRealmRecord, getWrappedValue }: Utils) {
     const {
         TypeError,
-        document,
         Object: { defineProperty },
         String,
     } = window;
     const globalRealmRec = {
-        intrinsics: { Function, TypeError },
+        intrinsics: { document, Function, TypeError },
         globalObject: window,
     } as RealmRecord;
     
@@ -41,15 +39,11 @@ function createShadowRealmInContext({ createRealmRecord, waitForGarbageCollectio
             if (!(this instanceof ShadowRealm)) {
                 throw new TypeError("Constructor ShadowRealm requires 'new'");
             }
-            const iframe = document.createElement('iframe');
-            iframe.name = 'ShadowRealm';
-            document.head.appendChild(iframe);
-            const realmRec = createRealmRecord(iframe.contentWindow as GlobalObject);
+            const realmRec = createRealmRecord(globalRealmRec, this);
             defineProperty(this, '__realm', { value: realmRec });
             defineProperty(this, '__import', {
                 value: realmRec.globalObject.Function('m', 'return import(m)'),
             });
-            waitForGarbageCollection(realmRec, this, iframe);
         }
     
         evaluate(sourceText: string) {
@@ -80,8 +74,14 @@ function createShadowRealmInContext({ createRealmRecord, waitForGarbageCollectio
 
 const codeOfCreateRealmRecord = `(${createRealmRecordInContext.toString()})`;
 
-function createRealmRecord(contentWindow: GlobalObject): RealmRecord {
-    return contentWindow.eval(codeOfCreateRealmRecord)(utils);
+function createRealmRecord(parentRealmRec: RealmRecord, shadowRealm: InstanceType<ShadowRealmConstructor>): RealmRecord {
+    const { document } = parentRealmRec.intrinsics;
+    const iframe = document.createElement('iframe');
+    iframe.name = 'ShadowRealm';
+    document.head.appendChild(iframe);
+    const realmRec = (iframe.contentWindow as GlobalObject).eval(codeOfCreateRealmRecord)(utils);
+    waitForGarbageCollection(realmRec, shadowRealm, iframe);
+    return realmRec;
 }
 
 function createRealmRecordInContext({ createShadowRealm, GLOBAL_PROPERTY_KEYS, safeApply }: Utils): RealmRecord {
