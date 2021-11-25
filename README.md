@@ -1,5 +1,5 @@
 # ShadowRealm API Polyfill
-A implementation of the [ShadowRealm API Proposal](https://github.com/tc39/proposal-shadowrealm#readme)
+A implementation of the [ShadowRealm API Proposal](https://tc39.es/proposal-shadowrealm)
 
 
 ## Install
@@ -22,7 +22,9 @@ import 'shadowrealm-api/browser/polyfill'
 
 const realm = new ShadowRealm();
 ```
-> Limitations: all code evaluated inside a ShadowRealm runs in strict mode
+> Limitations: 
+> 1. All code evaluated inside a ShadowRealm runs in strict mode;
+> 1. In v0.5.0, `importValue` is unsafe;
 
 ### For node.js
 1. Ponyfill
