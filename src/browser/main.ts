@@ -24,7 +24,6 @@ function createShadowRealmInContext({ createRealmRecord, getWrappedValue }: Util
     const {
         TypeError,
         Object: { defineProperty },
-        String,
     } = window;
     const globalRealmRec = {
         intrinsics: { document, Function, TypeError },
@@ -55,10 +54,8 @@ function createShadowRealmInContext({ createRealmRecord, getWrappedValue }: Util
         }
     
         importValue(specifier: string, bindingName: string): Promise<any> {
-            specifier = String(specifier);
-            if (bindingName !== undefined) {
-                bindingName = String(bindingName);
-            }
+            specifier += '';
+            bindingName += '';
             // FIXME: `import()` works under the global scope
             return this.__import!(specifier).then((module: any) => {
                 if (!(bindingName in module)) {
