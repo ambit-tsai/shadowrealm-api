@@ -1,6 +1,7 @@
 import { GLOBAL_PROPERTY_KEYS, GlobalObject, RealmRecord, waitForGarbageCollection, getWrappedValue, safeApply } from './utils';
 
 export type ShadowRealmConstructor = ReturnType<typeof createShadowRealmInContext>; 
+export type ShadowRealm = InstanceType<ShadowRealmConstructor>;
 
 
 const utils = {
@@ -26,7 +27,17 @@ function createShadowRealmInContext({ createRealmRecord, getWrappedValue }: Util
         Object: { defineProperty },
     } = window;
     const globalRealmRec = {
-        intrinsics: { document, Function, TypeError },
+        intrinsics: {
+            document,
+            Function,
+            Error,
+            EvalError,
+            RangeError,
+            ReferenceError,
+            SyntaxError,
+            TypeError,
+            URIError,
+        },
         globalObject: window,
     } as RealmRecord;
     
@@ -71,7 +82,7 @@ function createShadowRealmInContext({ createRealmRecord, getWrappedValue }: Util
 
 const codeOfCreateRealmRecord = `(${createRealmRecordInContext.toString()})`;
 
-function createRealmRecord(parentRealmRec: RealmRecord, shadowRealm: InstanceType<ShadowRealmConstructor>): RealmRecord {
+function createRealmRecord(parentRealmRec: RealmRecord, shadowRealm: ShadowRealm): RealmRecord {
     const { document } = parentRealmRec.intrinsics;
     const iframe = document.createElement('iframe');
     iframe.name = 'ShadowRealm';

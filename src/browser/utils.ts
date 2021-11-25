@@ -1,4 +1,4 @@
-import type { ShadowRealmConstructor } from './main';
+import type { ShadowRealm } from './main';
 
 /** The global properties of ECMAScript 2021  */
 export const GLOBAL_PROPERTY_KEYS = [
@@ -71,7 +71,7 @@ export type RealmRecord = {
 
 export const waitForGarbageCollection: (
     realmRec: RealmRecord,
-    shadowRealm: InstanceType<ShadowRealmConstructor>,
+    shadowRealm: ShadowRealm,
     iframe: HTMLIFrameElement,
 ) => void = window.FinalizationRegistry
     ? ({ intrinsics }, shadowRealm, iframe) => {
@@ -86,8 +86,8 @@ export const waitForGarbageCollection: (
 
 const { apply } = window.Function.prototype;
 
-export const safeApply = window.Reflect?.apply || function (fn: Function, ctx: any, args: any[]) {
-    return apply.call(fn as any, ctx, args);
+export const safeApply = window.Reflect?.apply || function (fn: Function, ctx: any, args: ArrayLike<any>) {
+    return apply.call(fn, ctx, args);
 };
 
 type SafeApply = typeof safeApply;
@@ -97,12 +97,11 @@ export function getWrappedValue<T>(
     callerRealm: RealmRecord,
     value: T,
     valueRealm: RealmRecord,
-    TypeError = callerRealm.intrinsics.TypeError,
 ): T {
     if (typeof value === 'function') {
-        return createWrappedFunction(callerRealm, value, valueRealm, TypeError);
+        return createWrappedFunction(callerRealm, value, valueRealm);
     } else if (typeof value === 'object' && value) {
-        throw new TypeError('value must be primitive or callable');
+        throw new callerRealm.intrinsics.TypeError('value must be primitive or callable');
     }
     return value;
 }
@@ -113,14 +112,12 @@ function createWrappedFunction(
     callerRealm: RealmRecord,
     targetFunction: Function,
     targetRealm: RealmRecord,
-    TypeError: TypeErrorConstructor,
 ) {
     return callerRealm.intrinsics.Function('params', codeOfWrappedFunction)({
         getWrappedValue,
         callerRealm,
         targetFunction,
         targetRealm,
-        TypeError,
         safeApply,
     });
 }
@@ -130,7 +127,6 @@ type ParamsForWrappedFunction = {
     callerRealm: RealmRecord,
     targetFunction: Function,
     targetRealm: RealmRecord,
-    TypeError: TypeErrorConstructor,
     safeApply: SafeApply,
 };
 
@@ -140,16 +136,33 @@ function wrappedFunctionInContext(this: any) {
         callerRealm,
         targetFunction,
         targetRealm,
-        TypeError,
         safeApply,
         // @ts-ignore: `params` is in parent scope
     } = params as ParamsForWrappedFunction;
-    const wrappedArgs: any[] = [];
-    for (let i = 0, { length } = arguments; i < length; ++i) {
-        const wrappedValue = getWrappedValue(targetRealm, arguments[i], callerRealm, TypeError);
-        wrappedArgs.push(wrappedValue);
+    try {
+        const wrappedArgs: any[] = [];
+        for (let i = 0, { length } = arguments; i < length; ++i) {
+            const wrappedValue = getWrappedValue(targetRealm, arguments[i], callerRealm);
+            wrappedArgs.push(wrappedValue);
+        }
+        // TODO: Does `this` need wrap?
+        const result = safeApply(targetFunction, targetRealm.globalObject, wrappedArgs);
+        return getWrappedValue(callerRealm, result, targetRealm);
+    } catch (err: any) {
+        const isObject = typeof err === 'object' && err;
+        // @ts-ignore: They are in the same context if the same `hasOwnProperty` is available.
+        if ((isObject || typeof err === 'function') && err.hasOwnProperty !== hasOwnProperty) {
+            if (isObject
+                && typeof err.name === 'string'
+                && /Error$/.test(err.name)
+                && err.name in callerRealm.intrinsics
+            ) {
+                const Ctor: any = callerRealm.intrinsics[err.name];
+                err = new Ctor(err.message);
+            } else {
+                err += '';
+            }
+        }
+        throw err;
     }
-    // TODO: Does `this` need wrap?
-    const result = safeApply(targetFunction, targetRealm.globalObject, wrappedArgs);
-    return getWrappedValue(callerRealm, result, targetRealm, TypeError);
 }
