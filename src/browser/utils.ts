@@ -64,6 +64,7 @@ export const GLOBAL_PROPERTY_KEYS = [
 
 export type GlobalObject = typeof window;
 export type SafeApply = typeof safeApply;
+export type InvokeWithErrorHandling = typeof invokeWithErrorHandling;
 export type GetWrappedValue = typeof getWrappedValue;
 
 
@@ -96,6 +97,7 @@ function createWrappedFunction(
     targetRealm: RealmRecord,
 ) {
     return callerRealm.intrinsics.Function('params', codeOfWrappedFunction)({
+        invokeWithErrorHandling,
         getWrappedValue,
         callerRealm,
         targetFunction,
@@ -106,6 +108,7 @@ function createWrappedFunction(
 
 
 type ParamsForWrappedFunction = {
+    invokeWithErrorHandling: InvokeWithErrorHandling,
     getWrappedValue: typeof getWrappedValue,
     callerRealm: RealmRecord,
     targetFunction: Function,
@@ -115,7 +118,9 @@ type ParamsForWrappedFunction = {
 
 
 function wrappedFunctionInContext(this: any) {
+    const args = arguments;
     const {
+        invokeWithErrorHandling,
         getWrappedValue,
         callerRealm,
         targetFunction,
@@ -123,26 +128,32 @@ function wrappedFunctionInContext(this: any) {
         safeApply,
         // @ts-ignore: `params` is in parent scope
     } = params as ParamsForWrappedFunction;
-    try {
+    return invokeWithErrorHandling(() => {
         const wrappedArgs: any[] = [];
-        for (let i = 0, { length } = arguments; i < length; ++i) {
-            const wrappedValue = getWrappedValue(targetRealm, arguments[i], callerRealm);
+        for (let i = 0, { length } = args; i < length; ++i) {
+            const wrappedValue = getWrappedValue(targetRealm, args[i], callerRealm);
             wrappedArgs.push(wrappedValue);
         }
-        // TODO: Does `this` need wrap?
         const result = safeApply(targetFunction, targetRealm.globalObject, wrappedArgs);
         return getWrappedValue(callerRealm, result, targetRealm);
+    }, callerRealm);
+}
+
+
+export function invokeWithErrorHandling<T>(callback: () => T, callerRealm: RealmRecord): T {
+    try {
+        return callback();
     } catch (err: any) {
         const isObject = typeof err === 'object' && err;
         // @ts-ignore: They are in the same context if the same `hasOwnProperty` is available.
-        if ((isObject || typeof err === 'function') && err.hasOwnProperty !== hasOwnProperty) {
+        if ((isObject || typeof err === 'function') && err.hasOwnProperty !== callerRealm.hasOwnProperty) {
             if (isObject
                 && typeof err.name === 'string'
                 && /Error$/.test(err.name)
                 && err.name in callerRealm.intrinsics
             ) {
-                const Ctor: any = callerRealm.intrinsics[err.name];
-                err = new Ctor(err.message);
+                // @ts-ignore
+                err = new callerRealm.intrinsics[err.name](err.message);
             } else {
                 err += '';
             }

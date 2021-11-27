@@ -1,4 +1,4 @@
-import { GlobalObject, getWrappedValue, GetWrappedValue } from './utils';
+import { GlobalObject, invokeWithErrorHandling, InvokeWithErrorHandling, getWrappedValue, GetWrappedValue } from './utils';
 import { createRealmRecord, CreateRealmRecord, RealmRecord } from './RealmRecord';
 
 
@@ -14,6 +14,7 @@ export function createShadowRealm(contentWindow: GlobalObject): ShadowRealmConst
     return contentWindow.eval(codeOfCreateShadowRealm)(
         createRealmRecord,
         createShadowRealm,
+        invokeWithErrorHandling,
         getWrappedValue,
     );
 }
@@ -22,6 +23,7 @@ export function createShadowRealm(contentWindow: GlobalObject): ShadowRealmConst
 function createShadowRealmInContext(
     createRealmRecord: CreateRealmRecord,
     createShadowRealm: CreateShadowRealm,
+    invokeWithErrorHandling: InvokeWithErrorHandling,
     getWrappedValue: GetWrappedValue,
 ) {
     const {
@@ -62,9 +64,10 @@ function createShadowRealmInContext(
             if (typeof sourceText !== 'string') {
                 throw new TypeError('evaluate expects a string');
             }
-            // TODO: 替换 import()
-            const result = this.__realm!.globalObject.eval(sourceText);
-            return getWrappedValue(globalRealmRec, result, this.__realm!);
+            return invokeWithErrorHandling(() => {
+                const result = this.__realm!.globalObject.eval(sourceText);
+                return getWrappedValue(globalRealmRec, result, this.__realm!);
+            }, globalRealmRec);
         }
     
         importValue(specifier: string, bindingName: string): Promise<any> {
