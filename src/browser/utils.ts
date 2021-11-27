@@ -1,4 +1,5 @@
-import type { ShadowRealm } from './main';
+import type { RealmRecord } from './RealmRecord';
+
 
 /** The global properties of ECMAScript 2021  */
 export const GLOBAL_PROPERTY_KEYS = [
@@ -62,35 +63,15 @@ export const GLOBAL_PROPERTY_KEYS = [
 
 
 export type GlobalObject = typeof window;
-
-export type RealmRecord = {
-    intrinsics: GlobalObject;
-    globalObject: GlobalObject;
-};
+export type SafeApply = typeof safeApply;
+export type GetWrappedValue = typeof getWrappedValue;
 
 
-export const waitForGarbageCollection: (
-    realmRec: RealmRecord,
-    shadowRealm: ShadowRealm,
-    iframe: HTMLIFrameElement,
-) => void = window.FinalizationRegistry
-    ? ({ intrinsics }, shadowRealm, iframe) => {
-        // TODO: need test
-        const registry = new intrinsics.FinalizationRegistry((iframe: HTMLIFrameElement) => {
-            iframe.parentNode!.removeChild(iframe);
-        });
-        registry.register(shadowRealm, iframe);
-    }
-    : () => {};
-
-
-const { apply } = window.Function.prototype;
+const { apply } = Function.prototype;
 
 export const safeApply = window.Reflect?.apply || function (fn: Function, ctx: any, args: ArrayLike<any>) {
     return apply.call(fn, ctx, args);
 };
-
-type SafeApply = typeof safeApply;
 
 
 export function getWrappedValue<T>(
@@ -105,6 +86,7 @@ export function getWrappedValue<T>(
     }
     return value;
 }
+
 
 const codeOfWrappedFunction = `return ${wrappedFunctionInContext.toString()}`;
 
@@ -122,6 +104,7 @@ function createWrappedFunction(
     });
 }
 
+
 type ParamsForWrappedFunction = {
     getWrappedValue: typeof getWrappedValue,
     callerRealm: RealmRecord,
@@ -129,6 +112,7 @@ type ParamsForWrappedFunction = {
     targetRealm: RealmRecord,
     safeApply: SafeApply,
 };
+
 
 function wrappedFunctionInContext(this: any) {
     const {

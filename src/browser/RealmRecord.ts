@@ -1,108 +1,72 @@
-import { GLOBAL_PROPERTY_KEYS, GlobalObject, RealmRecord, waitForGarbageCollection, getWrappedValue, safeApply } from './utils';
-
-export type ShadowRealmConstructor = ReturnType<typeof createShadowRealmInContext>; 
-export type ShadowRealm = InstanceType<ShadowRealmConstructor>;
+import type { ShadowRealm, CreateShadowRealm } from './ShadowRealm';
+import { GlobalObject, GLOBAL_PROPERTY_KEYS, safeApply, SafeApply } from './utils';
 
 
-const utils = {
-    createRealmRecord,
-    getWrappedValue,
-    createShadowRealm,
-    GLOBAL_PROPERTY_KEYS,
-    safeApply,
-};
-
-type Utils = typeof utils;
-
-
-const codeOfCreateShadowRealm = `(${createShadowRealmInContext.toString()})`;
-
-export function createShadowRealm(contentWindow: GlobalObject): ShadowRealmConstructor {
-    return contentWindow.eval(codeOfCreateShadowRealm)(utils);
+export interface RealmRecord {
+    intrinsics: GlobalObject;
+    globalObject: GlobalObject;
 }
-
-function createShadowRealmInContext({ createRealmRecord, getWrappedValue }: Utils) {
-    const {
-        TypeError,
-        Object: { defineProperty },
-    } = window;
-    const globalRealmRec = {
-        intrinsics: {
-            document,
-            Function,
-            Error,
-            EvalError,
-            RangeError,
-            ReferenceError,
-            SyntaxError,
-            TypeError,
-            URIError,
-        },
-        globalObject: window,
-    } as RealmRecord;
-    
-    return class ShadowRealm {
-        __realm?: RealmRecord;
-        __import?: (x: string) => Promise<any>;
-    
-        constructor() {
-            if (!(this instanceof ShadowRealm)) {
-                throw new TypeError("Constructor ShadowRealm requires 'new'");
-            }
-            const realmRec = createRealmRecord(globalRealmRec, this);
-            defineProperty(this, '__realm', { value: realmRec });
-            defineProperty(this, '__import', {
-                value: realmRec.globalObject.Function('m', 'return import(m)'),
-            });
-        }
-    
-        evaluate(sourceText: string) {
-            if (typeof sourceText !== 'string') {
-                throw new TypeError('evaluate expects a string');
-            }
-            const result = this.__realm!.globalObject.eval(sourceText);
-            return getWrappedValue(globalRealmRec, result, this.__realm!);
-        }
-    
-        importValue(specifier: string, bindingName: string): Promise<any> {
-            specifier += '';
-            bindingName += '';
-            // FIXME: `import()` works under the global scope
-            return this.__import!(specifier).then((module: any) => {
-                if (!(bindingName in module)) {
-                    throw new TypeError(`${specifier} has no export named ${bindingName}`);
-                }
-                return getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
-            });
-        }
-    }
-}
-
+export type CreateRealmRecord = typeof createRealmRecord;
 
 
 const codeOfCreateRealmRecord = `(${createRealmRecordInContext.toString()})`;
 
-function createRealmRecord(parentRealmRec: RealmRecord, shadowRealm: ShadowRealm): RealmRecord {
+const waitForGarbageCollection: (
+    realmRec: RealmRecord,
+    shadowRealm: ShadowRealm,
+    iframe: HTMLIFrameElement,
+) => void = window.FinalizationRegistry
+    ? ({ intrinsics }, shadowRealm, iframe) => {
+        // TODO: need test
+        const registry = new intrinsics.FinalizationRegistry((iframe: HTMLIFrameElement) => {
+            iframe.parentNode!.removeChild(iframe);
+        });
+        registry.register(shadowRealm, iframe);
+    }
+    : () => {};
+
+
+
+export function createRealmRecord(
+    parentRealmRec: RealmRecord,
+    createShadowRealm: CreateShadowRealm,
+    shadowRealm: ShadowRealm,
+): RealmRecord {
     const { document } = parentRealmRec.intrinsics;
     const iframe = document.createElement('iframe');
     iframe.name = 'ShadowRealm';
     document.head.appendChild(iframe);
-    const realmRec = (iframe.contentWindow as GlobalObject).eval(codeOfCreateRealmRecord)(utils);
+    const realmRec = (iframe.contentWindow as GlobalObject).eval(codeOfCreateRealmRecord)(
+        createShadowRealm,
+        GLOBAL_PROPERTY_KEYS,
+        safeApply,
+    );
     waitForGarbageCollection(realmRec, shadowRealm, iframe);
     return realmRec;
 }
 
-function createRealmRecordInContext({ createShadowRealm, GLOBAL_PROPERTY_KEYS, safeApply }: Utils): RealmRecord {
+
+function createRealmRecordInContext(
+    createShadowRealm: CreateShadowRealm,
+    GLOBAL_PROPERTY_KEYS: string[],
+    safeApply: SafeApply,
+): RealmRecord {
     const win = window;
     const { Object, Function } = win;
     const { defineProperty, getOwnPropertyNames, getOwnPropertyDescriptor } = Object;
 
+    class Global {
+        constructor() {
+            defineProperty(this, 'ShadowRealm', {
+                configurable: true,
+                writable: true,
+                value: createShadowRealm(win),
+            });
+        }
+    }
+
     const intrinsics = {} as GlobalObject;
-    const globalObject = defineProperty({} as GlobalObject, 'ShadowRealm', {
-        configurable: true,
-        writable: true,
-        value: createShadowRealm(win),
-    });
+    const globalObject = new Global() as GlobalObject;
 
     if (Symbol.unscopables) {
         defineProperty(globalObject, Symbol.unscopables, {
@@ -111,10 +75,12 @@ function createRealmRecordInContext({ createShadowRealm, GLOBAL_PROPERTY_KEYS, s
     }
     // Intercept the props of EventTarget.prototype
     for (const key of getOwnPropertyNames(EventTarget.prototype)) {
-        defineProperty(globalObject, key, {
-            writable: true,
-            value: key === 'constructor' ? Object.prototype.constructor : undefined,
-        });
+        if (key !== 'constructor') {
+            defineProperty(Global.prototype, key, {
+                writable: true,
+                value: undefined,
+            });
+        }
     }
 
     for (const key of getOwnPropertyNames(win) as any[]) {
@@ -132,7 +98,7 @@ function createRealmRecordInContext({ createShadowRealm, GLOBAL_PROPERTY_KEYS, s
             win[key] = undefined as any;
         } else if (!isExisted) {
             // Intercept properties that cannot be deleted
-            defineProperty(globalObject, key, {
+            defineProperty(Global.prototype, key, {
                 writable: true,
                 value: undefined,
             });
