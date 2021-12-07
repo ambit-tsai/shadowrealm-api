@@ -1,6 +1,12 @@
 # ShadowRealm API Polyfill
-A implementation of the [ShadowRealm API Proposal](https://tc39.es/proposal-shadowrealm)
-
+A implementation of the [ShadowRealm API Proposal](https://tc39.es/proposal-shadowrealm).
+```ts
+declare class ShadowRealm {
+    constructor();
+    evaluate(sourceText: string): PrimitiveValue | Function;
+    importValue(specifier: string, bindingName: string): Promise<PrimitiveValue | Function>;
+}
+```
 
 ## Install
 ```
@@ -24,7 +30,7 @@ const realm = new ShadowRealm();
 ```
 > Limitations: 
 > 1. All code evaluated inside a ShadowRealm runs in strict mode;
-> 1. In v0.5.0, `importValue` is unsafe;
+> 1. Partial support for ES Module;
 
 ### For node.js
 1. Ponyfill
@@ -42,17 +48,18 @@ const realm = new ShadowRealm();
 
 
 ## Compatibility
-### Without `importValue`
-|Node.js|Chrome|Firefox|IE|Edge|Opera|Safari|
+### Without ES Module
+|Node.js|IE|Edge|Firefox|Chrome|Safari|Opera|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|0.12.18|13|4|10|12|12.1|6|
+|0.12.18|10|12|4|13|6|12.1|
 
-### With `importValue`
-|Node.js|Chrome|Firefox|IE|Edge|Opera|Safari|
+### With ES Module
+|Node.js|IE|Edge|Firefox|Chrome|Safari|Opera|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|8.5.0|63|67|-|79|50|11.1|
+|8.5.0|-|12*|29*|32*|8*|19*|
+|8.5.0|-|14|39|42|10.1|29|
 
-*Reason:* `import()` has a poor compatibility. (Maybe it could be replaced by `fetch` or `XMLHttpRequest`)
+> \* Work with `fetch` polyfill.
 
 
 ## Contact

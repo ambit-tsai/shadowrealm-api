@@ -1,10 +1,12 @@
-import type { ShadowRealm, CreateShadowRealm } from './ShadowRealm';
-import { GlobalObject, GLOBAL_PROPERTY_KEYS, safeApply, SafeApply } from './utils';
+import type { ShadowRealm, Utils } from './ShadowRealm';
+import { GlobalObject } from './utils';
+import ESModule from './es-module';
 
 
 export interface RealmRecord {
     intrinsics: GlobalObject;
     globalObject: GlobalObject;
+    esm: ESModule,
 }
 export type CreateRealmRecord = typeof createRealmRecord;
 
@@ -29,31 +31,29 @@ const waitForGarbageCollection: (
 
 export function createRealmRecord(
     parentRealmRec: RealmRecord,
-    createShadowRealm: CreateShadowRealm,
+    utils: Utils,
     shadowRealm: ShadowRealm,
 ): RealmRecord {
     const { document } = parentRealmRec.intrinsics;
     const iframe = document.createElement('iframe');
     iframe.name = 'ShadowRealm';
     document.head.appendChild(iframe);
-    const realmRec = (iframe.contentWindow as GlobalObject).eval(codeOfCreateRealmRecord)(
-        createShadowRealm,
-        GLOBAL_PROPERTY_KEYS,
-        safeApply,
-    );
+    const realmRec = (iframe.contentWindow as GlobalObject).eval(codeOfCreateRealmRecord)(utils);
     waitForGarbageCollection(realmRec, shadowRealm, iframe);
     return realmRec;
 }
 
 
-function createRealmRecordInContext(
-    createShadowRealm: CreateShadowRealm,
-    GLOBAL_PROPERTY_KEYS: string[],
-    safeApply: SafeApply,
-): RealmRecord {
+function createRealmRecordInContext({
+    createShadowRealm,
+    ESModule,
+    assign,
+    globalReservedProperties,
+    safeApply,
+}: Utils): RealmRecord {
     const win = window;
     const { Object, Function } = win;
-    const { defineProperty, getOwnPropertyNames, getOwnPropertyDescriptor } = Object;
+    const { defineProperty, getOwnPropertyNames } = Object;
 
     class Global {
         constructor() {
@@ -67,6 +67,12 @@ function createRealmRecordInContext(
 
     const intrinsics = {} as GlobalObject;
     const globalObject = new Global() as GlobalObject;
+    const realmRec = {
+        intrinsics,
+        globalObject,
+    } as RealmRecord;
+    const esm = new ESModule(realmRec);
+    realmRec.esm = esm;
 
     if (Symbol.unscopables) {
         defineProperty(globalObject, Symbol.unscopables, {
@@ -76,17 +82,27 @@ function createRealmRecordInContext(
     // Intercept the props of EventTarget.prototype
     for (const key of getOwnPropertyNames(EventTarget.prototype)) {
         if (key !== 'constructor') {
-            defineProperty(Global.prototype, key, {
-                writable: true,
-                value: undefined,
-            });
+            defineProperty(Global.prototype, key, { value: undefined });
         }
     }
+    // Add helpers for ES Module
+    defineProperty(Global.prototype, '__import', {
+        value: (specifier: string) => esm.import(specifier),
+    });
+    defineProperty(Global.prototype, '__from', {
+        value: (specifier: string) => esm.get(specifier),
+    });
+    defineProperty(Global.prototype, '__export', {
+        set: (val) => assign(esm.exports, val),
+    });
+    defineProperty(Global.prototype, '__default', {
+        set: (val) => esm.exports!.default = val,
+    });
 
     for (const key of getOwnPropertyNames(win) as any[]) {
-        const descriptor = <PropertyDescriptor> getOwnPropertyDescriptor(win, key);
+        const descriptor = <PropertyDescriptor> Object.getOwnPropertyDescriptor(win, key);
         defineProperty(intrinsics, key, descriptor);
-        const isExisted = GLOBAL_PROPERTY_KEYS.indexOf(key) !== -1;
+        const isExisted = globalReservedProperties.indexOf(key) !== -1;
         if (key === 'eval') {
             defineEval();
         } else if (isExisted) {
@@ -98,19 +114,13 @@ function createRealmRecordInContext(
             win[key] = undefined as any;
         } else if (!isExisted) {
             // Intercept properties that cannot be deleted
-            defineProperty(Global.prototype, key, {
-                writable: true,
-                value: undefined,
-            });
+            defineProperty(Global.prototype, key, { value: undefined });
         }
     }
     // @ts-ignore: `globalThis` is writable
     globalObject.globalThis = globalObject;
     globalObject.Function = createFunction();
-    return {
-        intrinsics,
-        globalObject,
-    };
+    return realmRec;
 
 
     function defineEval() {

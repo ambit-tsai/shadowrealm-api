@@ -1,8 +1,8 @@
 import type { RealmRecord } from './RealmRecord';
 
 
-/** The global properties of ECMAScript 2021  */
-export const GLOBAL_PROPERTY_KEYS = [
+export const globalReservedProperties = [
+    // The global properties of ECMAScript 2021
     'globalThis',
     'Infinity',
     'NaN',
@@ -59,13 +59,15 @@ export const GLOBAL_PROPERTY_KEYS = [
     'JSON',
     'Math',
     'Reflect',
+
+    // Easy to debug
+    'console',
 ] as const;
 
 
 export type GlobalObject = typeof window;
-export type SafeApply = typeof safeApply;
-export type InvokeWithErrorHandling = typeof invokeWithErrorHandling;
-export type GetWrappedValue = typeof getWrappedValue;
+type SafeApply = typeof safeApply;
+type InvokeWithErrorHandling = typeof invokeWithErrorHandling;
 
 
 const { apply } = Function.prototype;
@@ -90,6 +92,7 @@ export function getWrappedValue<T>(
 
 
 const codeOfWrappedFunction = `return ${wrappedFunctionInContext.toString()}`;
+
 
 function createWrappedFunction(
     callerRealm: RealmRecord,
@@ -161,3 +164,14 @@ export function invokeWithErrorHandling<T>(callback: () => T, callerRealm: Realm
         throw err;
     }
 }
+
+
+export const assign = Object.assign || function (target: any) {
+    const args = arguments;
+    for (let i = 1, len = args.length - 1; i < len; ++i) {
+        for (const key of Object.keys(args[i])) {
+            target[key] = args[i][key];
+        }
+    }
+    return target;
+};

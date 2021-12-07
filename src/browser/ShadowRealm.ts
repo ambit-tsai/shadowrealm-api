@@ -1,31 +1,42 @@
-import { GlobalObject, invokeWithErrorHandling, InvokeWithErrorHandling, getWrappedValue, GetWrappedValue } from './utils';
-import { createRealmRecord, CreateRealmRecord, RealmRecord } from './RealmRecord';
+import { createRealmRecord, RealmRecord } from './RealmRecord';
+import { dynamicImportPattern, dynamicImportReplacer } from './es-module/helpers';
+import ESModule from './es-module';
+import {
+    GlobalObject,
+    invokeWithErrorHandling,
+    getWrappedValue,
+    assign,
+    globalReservedProperties,
+    safeApply,
+} from './utils';
 
 
 export type ShadowRealmConstructor = ReturnType<typeof createShadowRealmInContext>; 
 export type ShadowRealm = InstanceType<ShadowRealmConstructor>;
-export type CreateShadowRealm = typeof createShadowRealm;
+export type Utils = typeof utils;
 
 
 const codeOfCreateShadowRealm = `(${createShadowRealmInContext.toString()})`;
+const utils = {
+    createRealmRecord,
+    invokeWithErrorHandling,
+    dynamicImportPattern,
+    dynamicImportReplacer,
+    getWrappedValue,
+    createShadowRealm,
+    ESModule,
+    assign,
+    globalReservedProperties,
+    safeApply,
+};
 
 
 export function createShadowRealm(contentWindow: GlobalObject): ShadowRealmConstructor {
-    return contentWindow.eval(codeOfCreateShadowRealm)(
-        createRealmRecord,
-        createShadowRealm,
-        invokeWithErrorHandling,
-        getWrappedValue,
-    );
+    return contentWindow.eval(codeOfCreateShadowRealm)(utils);
 }
 
 
-function createShadowRealmInContext(
-    createRealmRecord: CreateRealmRecord,
-    createShadowRealm: CreateShadowRealm,
-    invokeWithErrorHandling: InvokeWithErrorHandling,
-    getWrappedValue: GetWrappedValue,
-) {
+function createShadowRealmInContext(utils: Utils) {
     const {
         TypeError,
         Object: { defineProperty },
@@ -51,9 +62,9 @@ function createShadowRealmInContext(
     
         constructor() {
             if (!(this instanceof ShadowRealm)) {
-                throw new TypeError("Constructor ShadowRealm requires 'new'");
+                throw new TypeError('Constructor requires a new operator');
             }
-            const realmRec = createRealmRecord(globalRealmRec, createShadowRealm, this);
+            const realmRec = utils.createRealmRecord(globalRealmRec, utils, this);
             defineProperty(this, '__realm', { value: realmRec });
             defineProperty(this, '__import', {
                 value: realmRec.globalObject.Function('m', 'return import(m)'),
@@ -64,21 +75,23 @@ function createShadowRealmInContext(
             if (typeof sourceText !== 'string') {
                 throw new TypeError('evaluate expects a string');
             }
-            return invokeWithErrorHandling(() => {
+            return utils.invokeWithErrorHandling(() => {
+                sourceText = sourceText.replace(utils.dynamicImportPattern, utils.dynamicImportReplacer);
                 const result = this.__realm!.globalObject.eval(sourceText);
-                return getWrappedValue(globalRealmRec, result, this.__realm!);
+                return utils.getWrappedValue(globalRealmRec, result, this.__realm!);
             }, globalRealmRec);
         }
     
         importValue(specifier: string, bindingName: string): Promise<any> {
             specifier += '';
             bindingName += '';
-            // FIXME: `import()` works under the global scope
-            return this.__import!(specifier).then((module: any) => {
+            return this.__realm!.esm.import(specifier).then((module: any) => {
                 if (!(bindingName in module)) {
-                    throw new TypeError(`${specifier} has no export named ${bindingName}`);
+                    throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
                 }
-                return getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
+                return utils.getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
+            }, err => {
+                utils.invokeWithErrorHandling(() => {throw err}, globalRealmRec);
             });
         }
     }
