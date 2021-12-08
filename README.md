@@ -48,18 +48,15 @@ const realm = new ShadowRealm();
 
 
 ## Compatibility
-### Without ES Module
-|Node.js|IE|Edge|Firefox|Chrome|Safari|Opera|
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|0.12.18|10|12|4|13|6|12.1|
+||Node.js|IE|Edge|Firefox|Chrome|Safari|Opera|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|Without ESM|4.9.1|10|12|4|13|6|12.1|
+|With ESM|9.6.0<sup>[1]</sup>|-|12<sup>[2]</sup>|29<sup>[2]</sup>|32<sup>[2]</sup>|8<sup>[2]</sup>|19<sup>[2]</sup>|
+|With ESM|9.6.0<sup>[1]</sup>|-|14|39|42|10.1|29|
 
-### With ES Module
-|Node.js|IE|Edge|Firefox|Chrome|Safari|Opera|
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|8.5.0|-|12*|29*|32*|8*|19*|
-|8.5.0|-|14|39|42|10.1|29|
-
-> \* Work with `fetch` polyfill.
+> Notes:
+> 1. Enable ES Module support in Node.js vm with `--experimental-vm-modules` option;
+> 2. Available in browser with `fetch` polyfill;
 
 
 ## Contact
