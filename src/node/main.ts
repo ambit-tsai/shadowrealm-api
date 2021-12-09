@@ -14,19 +14,21 @@ import {
 
 export type ShadowRealmConstructor = ReturnType<typeof createShadowRealmInContext>;
 
+
 export function createShadowRealm(): ShadowRealmConstructor {
     const realmRec = createRealmRecord(global);
-    return creatShadowRealmByRealmRecord(realmRec);
+    return createShadowRealmByRealmRecord(realmRec);
 }
 
 
 const codeOfCreateShadowRealm = `(${createShadowRealmInContext.toString()})`;
 
-function creatShadowRealmByRealmRecord(realmRec: RealmRecord): ShadowRealmConstructor {
+
+function createShadowRealmByRealmRecord(realmRec: RealmRecord): ShadowRealmConstructor {
     return realmRec.intrinsics.eval(codeOfCreateShadowRealm)(
         vm,
         createRealmRecord,
-        creatShadowRealmByRealmRecord,
+        createShadowRealmByRealmRecord,
         realmRec,
         invokeWithErrorHandling,
         getWrappedValue,
@@ -34,13 +36,14 @@ function creatShadowRealmByRealmRecord(realmRec: RealmRecord): ShadowRealmConstr
 }
 
 
-type CreatShadowRealmByRealmRecord = typeof creatShadowRealmByRealmRecord;
+type CreateShadowRealmByRealmRecord = typeof createShadowRealmByRealmRecord;
+
 
 function createShadowRealmInContext(
     this: GlobalObject,
     vm: any,
     createRealmRecord: CreateRealmRecord,
-    creatShadowRealmByRealmRecord: CreatShadowRealmByRealmRecord,
+    createShadowRealmByRealmRecord: CreateShadowRealmByRealmRecord,
     globalRealmRec: RealmRecord,
     invokeWithErrorHandling: InvokeWithErrorHandling,
     getWrappedValue: GetWrappedValue,
@@ -50,9 +53,12 @@ function createShadowRealmInContext(
 
     return class ShadowRealm {
         __realm?: RealmRecord;
-        __import?: (x: string) => Promise<any>;
+        __import?: (m: string) => Promise<any>;
     
         constructor() {
+            if (!(this instanceof ShadowRealm)) {
+                throw new TypeError('Constructor requires a new operator');
+            }
             const obj = create(null);
             const ctx = vm.createContext(obj);
             const globalObject = vm.runInContext('this', ctx);
@@ -60,7 +66,7 @@ function createShadowRealmInContext(
             defineProperty(globalObject, 'ShadowRealm', {
                 configurable: true,
                 writable: true,
-                value: creatShadowRealmByRealmRecord(realmRec),
+                value: createShadowRealmByRealmRecord(realmRec),
             });
             defineProperty(this, '__realm', {
                 value: realmRec,
@@ -86,12 +92,13 @@ function createShadowRealmInContext(
             return this.__import!(specifier)
                 .then((module: any) => {
                     if (!(bindingName in module)) {
-                        throw new TypeError(`${specifier} has no export named ${bindingName}`);
+                        throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
                     }
                     return getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
                 }, err => {
                     invokeWithErrorHandling(() => {throw err}, globalRealmRec);
                 });
         }
+
     }
 }
