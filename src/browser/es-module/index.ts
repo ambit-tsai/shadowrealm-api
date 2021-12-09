@@ -1,6 +1,9 @@
 import type { RealmRecord } from '../RealmRecord';
-import { wrapError } from '../utils';
+import { assign, wrapError } from '../utils';
 import { exportedNames, moduleSpecifiers, patternAndReplacers } from './helpers';
+
+
+const codeOfDefineHelpers = `(${defineHelpersInContext.toString()})`;
 
 
 export default class ESModule {
@@ -10,6 +13,7 @@ export default class ESModule {
     
     constructor(realmRec: RealmRecord) {
         this.realmRec = realmRec;
+        realmRec.intrinsics.eval(codeOfDefineHelpers)(realmRec, this, assign);
     }
 
     get(specifier: string): object {
@@ -71,9 +75,29 @@ export default class ESModule {
         if (exportedNames.length) {
             sourceText += `;__export = {${exportedNames.join()}};`;
         }
+        console.log(sourceText);
         return [
             sourceText,
             moduleSpecifiers.slice(),
         ] as const;
     }
+
+}
+
+
+function defineHelpersInContext(realmRec: RealmRecord, esm: ESModule, assign: Function) {
+    const { defineProperty } = realmRec.intrinsics.Object;
+    const { prototype } = realmRec.globalObject.constructor;
+    defineProperty(prototype, '__import', {
+        value: (specifier: string) => esm.import(specifier),
+    });
+    defineProperty(prototype, '__from', {
+        value: (specifier: string) => esm.get(specifier),
+    });
+    defineProperty(prototype, '__export', {
+        set: (val) => assign(esm.exports, val),
+    });
+    defineProperty(prototype, '__default', {
+        set: (val) => esm.exports!.default = val,
+    });
 }

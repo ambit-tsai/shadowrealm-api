@@ -66,12 +66,6 @@ function createRealmRecordInContext({
 
     const intrinsics = {} as GlobalObject;
     const globalObject = new Global() as GlobalObject;
-    const realmRec = {
-        intrinsics,
-        globalObject,
-    } as RealmRecord;
-    const esm = new ESModule(realmRec);
-    realmRec.esm = esm;
 
     if (Symbol.unscopables) {
         defineProperty(globalObject, Symbol.unscopables, {
@@ -84,19 +78,6 @@ function createRealmRecordInContext({
             defineProperty(Global.prototype, key, { value: undefined });
         }
     }
-    // Add helpers for ES Module
-    defineProperty(Global.prototype, '__import', {
-        value: (specifier: string) => esm.import(specifier),
-    });
-    defineProperty(Global.prototype, '__from', {
-        value: (specifier: string) => esm.get(specifier),
-    });
-    defineProperty(Global.prototype, '__export', {
-        set: (val) => assign(esm.exports, val),
-    });
-    defineProperty(Global.prototype, '__default', {
-        set: (val) => esm.exports!.default = val,
-    });
 
     for (const key of getOwnPropertyNames(win) as any[]) {
         const descriptor = <PropertyDescriptor> Object.getOwnPropertyDescriptor(win, key);
@@ -119,6 +100,12 @@ function createRealmRecordInContext({
     // @ts-ignore: `globalThis` is writable
     globalObject.globalThis = globalObject;
     globalObject.Function = createFunction();
+    
+    const realmRec = {
+        intrinsics,
+        globalObject,
+    } as RealmRecord;
+    realmRec.esm = new ESModule(realmRec);
     return realmRec;
 
 
