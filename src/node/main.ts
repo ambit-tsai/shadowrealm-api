@@ -49,7 +49,7 @@ function createShadowRealmInContext(
     wrapError: WrapError,
 ) {
     const { create, defineProperty } = Object;
-    const { TypeError } = this;
+    const { TypeError, Promise } = this;
 
     return class ShadowRealm {
         __realm?: RealmRecord;
@@ -91,15 +91,19 @@ function createShadowRealmInContext(
         importValue(specifier: string, bindingName: string) {
             specifier += '';
             bindingName += '';
-            return this.__import!(specifier)
-                .then((module: any) => {
-                    if (!(bindingName in module)) {
-                        throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
-                    }
-                    return getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
-                }, error => {
-                    wrapError(error, globalRealmRec);
-                });
+            return new Promise((resolve, reject) => {
+                this.__import!(specifier)
+                    .then((module: any) => {
+                        if (!(bindingName in module)) {
+                            throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
+                        }
+                        const result = getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
+                        resolve(result);
+                    }, error => {
+                        wrapError(error, globalRealmRec);
+                    })
+                    .catch(reject);
+            });
         }
 
     }
