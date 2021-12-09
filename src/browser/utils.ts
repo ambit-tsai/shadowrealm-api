@@ -66,8 +66,6 @@ export const globalReservedProperties = [
 
 
 export type GlobalObject = typeof window;
-type SafeApply = typeof safeApply;
-type InvokeWithErrorHandling = typeof invokeWithErrorHandling;
 
 
 const { apply } = Function.prototype;
@@ -100,7 +98,6 @@ function createWrappedFunction(
     targetRealm: RealmRecord,
 ) {
     return callerRealm.intrinsics.Function('params', codeOfWrappedFunction)({
-        invokeWithErrorHandling,
         getWrappedValue,
         callerRealm,
         targetFunction,
@@ -111,67 +108,68 @@ function createWrappedFunction(
 
 
 type ParamsForWrappedFunction = {
-    invokeWithErrorHandling: InvokeWithErrorHandling,
     getWrappedValue: typeof getWrappedValue,
     callerRealm: RealmRecord,
     targetFunction: Function,
     targetRealm: RealmRecord,
-    safeApply: SafeApply,
+    safeApply: typeof safeApply,
+    wrapError: typeof wrapError,
 };
 
 
 function wrappedFunctionInContext(this: any) {
-    const args = arguments;
     const {
-        invokeWithErrorHandling,
         getWrappedValue,
         callerRealm,
         targetFunction,
         targetRealm,
         safeApply,
+        wrapError,
         // @ts-ignore: `params` is in parent scope
     } = params as ParamsForWrappedFunction;
-    return invokeWithErrorHandling(() => {
+    try {
         const wrappedArgs: any[] = [];
-        for (let i = 0, { length } = args; i < length; ++i) {
-            const wrappedValue = getWrappedValue(targetRealm, args[i], callerRealm);
+        for (let i = 0, { length } = arguments; i < length; ++i) {
+            const wrappedValue = getWrappedValue(targetRealm, arguments[i], callerRealm);
             wrappedArgs.push(wrappedValue);
         }
         const result = safeApply(targetFunction, targetRealm.globalObject, wrappedArgs);
         return getWrappedValue(callerRealm, result, targetRealm);
-    }, callerRealm);
+    } catch (error) {
+        wrapError(error, callerRealm);
+    }
 }
 
 
-export function invokeWithErrorHandling<T>(callback: () => T, callerRealm: RealmRecord): T {
-    try {
-        return callback();
-    } catch (err: any) {
-        const isObject = typeof err === 'object' && err;
-        // @ts-ignore: They are in the same context if the same `hasOwnProperty` is available.
-        if ((isObject || typeof err === 'function') && err.hasOwnProperty !== callerRealm.hasOwnProperty) {
-            if (isObject
-                && typeof err.name === 'string'
-                && /Error$/.test(err.name)
-                && err.name in callerRealm.intrinsics
-            ) {
-                // @ts-ignore
-                err = new callerRealm.intrinsics[err.name](err.message);
-            } else {
-                err += '';
+export function wrapError(error: any, realmRec: RealmRecord): never {
+    const isObject = typeof error === 'object' && error;
+    // @ts-ignore: They are in the same context if the same `hasOwnProperty` is available.
+    if ((isObject || typeof error === 'function') && error.hasOwnProperty !== realmRec.hasOwnProperty) {
+        if (isObject
+            && typeof error.name === 'string'
+            && /Error$/.test(error.name)
+            && error.name in realmRec.intrinsics
+        ) {
+            // @ts-ignore
+            error = new realmRec.intrinsics[error.name](error.message);
+        } else {
+            error += '';
+        }
+    }
+    throw error;
+}
+
+
+let { assign, keys } = Object;
+if (!assign) {
+    assign = function (target: Record<PropertyKey, any>) {
+        const args = arguments;
+        for (let i = 1, { length } = args; i < length; ++i) {
+            for (const key of keys(args[i])) {
+                target[key] = args[i][key];
             }
         }
-        throw err;
-    }
+        return target;
+    };
 }
-
-
-export const assign = Object.assign || function (target: any) {
-    const args = arguments;
-    for (let i = 1, len = args.length - 1; i < len; ++i) {
-        for (const key of Object.keys(args[i])) {
-            target[key] = args[i][key];
-        }
-    }
-    return target;
-};
+export { assign }; 

@@ -1,5 +1,5 @@
 import type { RealmRecord } from '../RealmRecord';
-import { invokeWithErrorHandling } from '../utils';
+import { wrapError } from '../utils';
 import { exportedNames, moduleSpecifiers, patternAndReplacers } from './helpers';
 
 
@@ -52,11 +52,11 @@ export default class ESModule {
                 this.cache[specifier] = exports;
                 resolve(exports);
             })
-            .catch(err => {
+            .catch(error => {
                 try {
-                    invokeWithErrorHandling(() => {throw err}, this.realmRec);
-                } catch (error) {
-                    reject(error);
+                    wrapError(error, this.realmRec)
+                } catch (newError) {
+                    reject(newError);
                 }
             });
         });
@@ -71,7 +71,6 @@ export default class ESModule {
         if (exportedNames.length) {
             sourceText += `;__export = {${exportedNames.join()}};`;
         }
-        console.log(sourceText, moduleSpecifiers);  // FIXME: 测试代码
         return [
             sourceText,
             moduleSpecifiers.slice(),

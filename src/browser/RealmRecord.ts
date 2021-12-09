@@ -8,7 +8,6 @@ export interface RealmRecord {
     globalObject: GlobalObject;
     esm: ESModule,
 }
-export type CreateRealmRecord = typeof createRealmRecord;
 
 
 const codeOfCreateRealmRecord = `(${createRealmRecordInContext.toString()})`;

@@ -3,11 +3,11 @@ import { dynamicImportPattern, dynamicImportReplacer } from './es-module/helpers
 import ESModule from './es-module';
 import {
     GlobalObject,
-    invokeWithErrorHandling,
     getWrappedValue,
     assign,
     globalReservedProperties,
     safeApply,
+    wrapError,
 } from './utils';
 
 
@@ -19,7 +19,6 @@ export type Utils = typeof utils;
 const codeOfCreateShadowRealm = `(${createShadowRealmInContext.toString()})`;
 const utils = {
     createRealmRecord,
-    invokeWithErrorHandling,
     dynamicImportPattern,
     dynamicImportReplacer,
     getWrappedValue,
@@ -28,6 +27,7 @@ const utils = {
     assign,
     globalReservedProperties,
     safeApply,
+    wrapError,
 };
 
 
@@ -41,6 +41,7 @@ function createShadowRealmInContext(utils: Utils) {
         TypeError,
         Object: { defineProperty },
     } = window;
+    const { replace } = String.prototype;
     const globalRealmRec = {
         intrinsics: {
             document,
@@ -58,7 +59,6 @@ function createShadowRealmInContext(utils: Utils) {
     
     return class ShadowRealm {
         __realm?: RealmRecord;
-        __import?: (x: string) => Promise<any>;
     
         constructor() {
             if (!(this instanceof ShadowRealm)) {
@@ -66,32 +66,35 @@ function createShadowRealmInContext(utils: Utils) {
             }
             const realmRec = utils.createRealmRecord(globalRealmRec, utils, this);
             defineProperty(this, '__realm', { value: realmRec });
-            defineProperty(this, '__import', {
-                value: realmRec.globalObject.Function('m', 'return import(m)'),
-            });
         }
     
         evaluate(sourceText: string) {
             if (typeof sourceText !== 'string') {
                 throw new TypeError('evaluate expects a string');
             }
-            return utils.invokeWithErrorHandling(() => {
-                sourceText = sourceText.replace(utils.dynamicImportPattern, utils.dynamicImportReplacer);
+            sourceText = utils.safeApply(replace, sourceText, [
+                utils.dynamicImportPattern,
+                utils.dynamicImportReplacer,
+            ]);
+            try {
                 const result = this.__realm!.globalObject.eval(sourceText);
                 return utils.getWrappedValue(globalRealmRec, result, this.__realm!);
-            }, globalRealmRec);
+            } catch (error) {
+                utils.wrapError(error, globalRealmRec);
+            }
         }
     
         importValue(specifier: string, bindingName: string): Promise<any> {
             specifier += '';
             bindingName += '';
-            return this.__realm!.esm.import(specifier).then((module: any) => {
+            // FIXME: 返回的 Promise 是沙箱内部的
+            return this.__realm!.esm.import(specifier).then((module: Record<PropertyKey, any>) => {
                 if (!(bindingName in module)) {
                     throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
                 }
                 return utils.getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
-            }, err => {
-                utils.invokeWithErrorHandling(() => {throw err}, globalRealmRec);
+            }, error => {
+                utils.wrapError(error, globalRealmRec);
             });
         }
     }
