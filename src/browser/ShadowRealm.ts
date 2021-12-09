@@ -40,6 +40,7 @@ function createShadowRealmInContext(utils: Utils) {
     const {
         TypeError,
         Object: { defineProperty },
+        Promise,
     } = window;
     const { replace } = String.prototype;
     const globalRealmRec = {
@@ -87,14 +88,17 @@ function createShadowRealmInContext(utils: Utils) {
         importValue(specifier: string, bindingName: string): Promise<any> {
             specifier += '';
             bindingName += '';
-            // FIXME: 返回的 Promise 是沙箱内部的
-            return this.__realm!.esm.import(specifier).then((module: Record<PropertyKey, any>) => {
-                if (!(bindingName in module)) {
-                    throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
-                }
-                return utils.getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
-            }, error => {
-                utils.wrapError(error, globalRealmRec);
+            return new Promise((resolve, reject) => {
+                this.__realm!.esm.import(specifier).then((module: Record<PropertyKey, any>) => {
+                    if (!(bindingName in module)) {
+                        throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
+                    }
+                    const result = utils.getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
+                    resolve(result);
+                }, error => {
+                    utils.wrapError(error, globalRealmRec);
+                })
+                .catch(reject);
             });
         }
     }
