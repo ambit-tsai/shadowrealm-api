@@ -7,8 +7,8 @@ import {
     RealmRecord,
     getWrappedValue,
     GetWrappedValue,
-    invokeWithErrorHandling,
-    InvokeWithErrorHandling,
+    wrapError,
+    WrapError,
 } from './utils';
 
 
@@ -30,8 +30,8 @@ function createShadowRealmByRealmRecord(realmRec: RealmRecord): ShadowRealmConst
         createRealmRecord,
         createShadowRealmByRealmRecord,
         realmRec,
-        invokeWithErrorHandling,
         getWrappedValue,
+        wrapError,
     );
 }
 
@@ -45,8 +45,8 @@ function createShadowRealmInContext(
     createRealmRecord: CreateRealmRecord,
     createShadowRealmByRealmRecord: CreateShadowRealmByRealmRecord,
     globalRealmRec: RealmRecord,
-    invokeWithErrorHandling: InvokeWithErrorHandling,
     getWrappedValue: GetWrappedValue,
+    wrapError: WrapError,
 ) {
     const { create, defineProperty } = Object;
     const { TypeError } = this;
@@ -80,10 +80,12 @@ function createShadowRealmInContext(
             if (typeof sourceText !== 'string') {
                 throw new TypeError('evaluate expects a string');
             }
-            return invokeWithErrorHandling(() => {
+            try {
                 const result = this.__realm!.intrinsics.eval(sourceText);
                 return getWrappedValue(globalRealmRec, result, this.__realm!);
-            }, globalRealmRec);
+            } catch (error) {
+                wrapError(error, globalRealmRec);
+            }
         }
         
         importValue(specifier: string, bindingName: string) {
@@ -95,8 +97,8 @@ function createShadowRealmInContext(
                         throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
                     }
                     return getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
-                }, err => {
-                    invokeWithErrorHandling(() => {throw err}, globalRealmRec);
+                }, error => {
+                    wrapError(error, globalRealmRec);
                 });
         }
 
