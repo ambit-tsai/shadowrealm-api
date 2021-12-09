@@ -103,6 +103,7 @@ function createWrappedFunction(
         targetFunction,
         targetRealm,
         safeApply,
+        wrapError,
     });
 }
 
