@@ -2,11 +2,10 @@ import type { ShadowRealm, Utils } from './ShadowRealm';
 import { GlobalObject } from './utils';
 import ESModule from './es-module';
 
-
 export interface RealmRecord {
     intrinsics: GlobalObject;
     globalObject: GlobalObject;
-    esm: ESModule,
+    esm: ESModule;
 }
 
 
@@ -44,57 +43,49 @@ export function createRealmRecord(
 
 
 function createRealmRecordInContext({
-    createShadowRealm,
+    createShadowRealmByRealmRecord,
     ESModule,
     assign,
     globalReservedProperties,
+    wrapError,
     safeApply,
 }: Utils): RealmRecord {
     const win = window;
-    const { Object, Function } = win;
+    const { Object } = win;
     const { defineProperty, getOwnPropertyNames } = Object;
-
-    class Global {
-        constructor() {
-            defineProperty(this, 'ShadowRealm', {
-                configurable: true,
-                writable: true,
-                value: createShadowRealm(win),
-            });
-        }
-    }
-
     const intrinsics = {} as GlobalObject;
-    const globalObject = new Global() as GlobalObject;
+    const globalObject = {} as GlobalObject;
 
-    if (Symbol.unscopables) {
-        defineProperty(globalObject, Symbol.unscopables, {
-            value: Object.create(null),
-        });
-    }
-    // Intercept the props of EventTarget.prototype
-    for (const key of getOwnPropertyNames(EventTarget.prototype)) {
-        if (key !== 'constructor') {
-            defineProperty(Global.prototype, key, { value: undefined });
-        }
-    }
-
+    // Handle window object
     for (const key of getOwnPropertyNames(win) as any[]) {
         const descriptor = <PropertyDescriptor> Object.getOwnPropertyDescriptor(win, key);
         defineProperty(intrinsics, key, descriptor);
-        const isExisted = globalReservedProperties.indexOf(key) !== -1;
+        const isReserved = globalReservedProperties.indexOf(key) !== -1;
         if (key === 'eval') {
             defineEval();
-        } else if (isExisted) {
+        } else if (isReserved) {
             defineProperty(globalObject, key, descriptor);  // copy to new global object
         }
         if (descriptor.configurable) {
             delete win[key];
         } else if (descriptor.writable) {
             win[key] = undefined as any;
-        } else if (!isExisted) {
+        } else if (!isReserved) {
             // Intercept properties that cannot be deleted
-            defineProperty(Global.prototype, key, { value: undefined });
+            defineProperty(globalObject, key, { value: undefined });
+        }
+    }
+    
+    if (intrinsics.Symbol?.unscopables) {
+        // Prevent escape from the `with` environment 
+        defineProperty(globalObject, intrinsics.Symbol.unscopables, {
+            value: Object.preventExtensions(Object.create(null)),
+        });
+    }
+    // Intercept the props of EventTarget.prototype
+    for (const key of getOwnPropertyNames(intrinsics.EventTarget.prototype)) {
+        if (key !== 'constructor') {
+            defineProperty(globalObject, key, { value: undefined });
         }
     }
     // @ts-ignore: `globalThis` is writable
@@ -105,7 +96,37 @@ function createRealmRecordInContext({
         intrinsics,
         globalObject,
     } as RealmRecord;
-    realmRec.esm = new ESModule(realmRec);
+    defineProperty(globalObject, 'ShadowRealm', {
+        configurable: true,
+        writable: true,
+        value: createShadowRealmByRealmRecord(realmRec),
+    });
+    // Add helpers for ES Module
+    const esm = new ESModule(realmRec);
+    realmRec.esm = esm;
+    defineProperty(globalObject, '__from', {
+        value: (specifier: string) => esm.get(specifier),
+    });
+    defineProperty(globalObject, '__export', {
+        set: val => assign(esm.exports, val),
+    });
+    defineProperty(globalObject, '__default', {
+        set: val => esm.exports!.default = val,
+    });
+    defineProperty(globalObject, '__import', {
+        value(specifier: string) {
+            return new intrinsics.Promise((resolve, reject) => {
+                esm.import(specifier).then(resolve, error => {
+                    try {
+                        wrapError(error, realmRec);
+                    } catch (newError) {
+                        reject(newError);
+                    }
+                });
+            });
+        },
+    });
+
     return realmRec;
 
 
@@ -128,7 +149,7 @@ function createRealmRecordInContext({
 
 
     function createEval() {
-        const safeEval = Function('with(this)return eval(arguments[0])');
+        const safeEval = intrinsics.Function('with(this)return eval(arguments[0])');
         return {
             eval(x: string) {
                 // @ts-ignore: `intrinsics` is the key to use raw `eval`

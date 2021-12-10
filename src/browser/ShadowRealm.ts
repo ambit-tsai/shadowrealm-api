@@ -2,7 +2,6 @@ import { createRealmRecord, RealmRecord } from './RealmRecord';
 import { dynamicImportPattern, dynamicImportReplacer } from './es-module/helpers';
 import ESModule from './es-module';
 import {
-    GlobalObject,
     getWrappedValue,
     assign,
     globalReservedProperties,
@@ -16,13 +15,43 @@ export type ShadowRealm = InstanceType<ShadowRealmConstructor>;
 export type Utils = typeof utils;
 
 
+export function createShadowRealm(): ShadowRealmConstructor {
+    const reservedProperties = [
+        'document',
+        'eval',
+        'Function',
+        'Object',
+        'Promise',
+        'String',
+        'Error',
+        'EvalError',
+        'RangeError',
+        'ReferenceError',
+        'SyntaxError',
+        'TypeError',
+        'URIError',
+        'AggregateError',
+    ] as const;
+    const intrinsics = {} as Record<string, any>;
+    for (const key of reservedProperties) {
+        if (window[key]) {
+            intrinsics[key] = window[key];
+        }
+    }
+    return createShadowRealmByRealmRecord({
+        intrinsics,
+        globalObject: window,
+    } as RealmRecord);
+}
+
+
 const codeOfCreateShadowRealm = `(${createShadowRealmInContext.toString()})`;
 const utils = {
     createRealmRecord,
     dynamicImportPattern,
     dynamicImportReplacer,
     getWrappedValue,
-    createShadowRealm,
+    createShadowRealmByRealmRecord,
     ESModule,
     assign,
     globalReservedProperties,
@@ -31,32 +60,20 @@ const utils = {
 };
 
 
-export function createShadowRealm(contentWindow: GlobalObject): ShadowRealmConstructor {
-    return contentWindow.eval(codeOfCreateShadowRealm)(utils);
+function createShadowRealmByRealmRecord(realmRec: RealmRecord): ShadowRealmConstructor {
+    return realmRec.intrinsics.eval(codeOfCreateShadowRealm)(realmRec, utils);
 }
 
 
-function createShadowRealmInContext(utils: Utils) {
+function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
     const {
         TypeError,
         Object: { defineProperty },
         Promise,
-    } = window;
-    const { replace } = String.prototype;
-    const globalRealmRec = {
-        intrinsics: {
-            document,
-            Function,
-            Error,
-            EvalError,
-            RangeError,
-            ReferenceError,
-            SyntaxError,
-            TypeError,
-            URIError,
+        String: {
+            prototype: { replace },
         },
-        globalObject: window,
-    } as RealmRecord;
+    } = globalRealmRec.intrinsics;
     
     return class ShadowRealm {
         __realm?: RealmRecord;
@@ -103,5 +120,6 @@ function createShadowRealmInContext(utils: Utils) {
                     .catch(reject);
             });
         }
+
     }
 }
