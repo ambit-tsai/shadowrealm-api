@@ -6,6 +6,7 @@ export interface RealmRecord {
     intrinsics: GlobalObject;
     globalObject: GlobalObject;
     esm: ESModule;
+    debug?: boolean;
 }
 
 

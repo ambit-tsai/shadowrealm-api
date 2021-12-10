@@ -77,6 +77,7 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
     
     return class ShadowRealm {
         __realm?: RealmRecord;
+        __debug?: boolean;
     
         constructor() {
             if (!(this instanceof ShadowRealm)) {
@@ -84,6 +85,10 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
             }
             const realmRec = utils.createRealmRecord(globalRealmRec, utils, this);
             defineProperty(this, '__realm', { value: realmRec });
+            defineProperty(this, '__debug', {
+                get: () => realmRec.debug,
+                set: val => realmRec.debug = val,
+            });
         }
     
         evaluate(sourceText: string) {

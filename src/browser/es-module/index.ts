@@ -36,6 +36,9 @@ export default class ESModule {
             return Promise.all(modules).then(() => text);
         })
         .then((text: string) => {
+            if (this.realmRec.debug) {
+                console.log('[DEBUG]', text);
+            }
             const exports = Object.create(null);
             if (window.Symbol?.toStringTag) {
                 Object.defineProperty(exports, Symbol.toStringTag, {
