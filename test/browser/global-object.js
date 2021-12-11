@@ -35,8 +35,20 @@ diyTest('window in eval', () => {
     return sr.evaluate('eval("window")') === undefined;
 });
 
+diyTest("window in eval's dynamic import", async () => {
+    const specifier = createSpecifier('export default window === undefined');
+    const result = await sr.__realm.globalObject.eval(`import('${specifier}')`);
+    return result.default;
+});
+
 diyTest('window in Function', () => {
     return sr.evaluate('Function("return window")')() === undefined;
+});
+
+diyTest("window in Function's dynamic import", async () => {
+    const specifier = createSpecifier('export default window === undefined');
+    const result = await sr.__realm.globalObject.Function(`return import('${specifier}')`)();
+    return result.default;
 });
 
 diyTest('window in Function.prototype.constructor', () => {

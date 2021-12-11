@@ -30,6 +30,19 @@ diyTest('promise return by dynamic import', async () => {
     `);
 });
 
+diyTest('module return by dynamic import', async () => {
+    const specifier = createSpecifier('export default 123');
+    const module = await sr.__realm.globalObject.eval(`import('${specifier}')`);
+    return Object.getPrototypeOf(module) === null;
+});
+
+diyTest('object return by dynamic import', async () => {
+    const specifier = createSpecifier('export default {}');
+    return await sr.__realm.globalObject.eval(`
+        import('${specifier}').then(module => module.default.hasOwnProperty === Object.prototype.hasOwnProperty)
+    `);
+});
+
 diyTest('function return by evaluate', () => {
     const fn = sr.evaluate('() => {}');
     return fn.hasOwnProperty === Object.prototype.hasOwnProperty;
