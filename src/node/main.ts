@@ -16,7 +16,23 @@ export type ShadowRealmConstructor = ReturnType<typeof createShadowRealmInContex
 
 
 export function createShadowRealm(): ShadowRealmConstructor {
-    const realmRec = createRealmRecord(global);
+    const globalObject = {
+        Object,
+        eval,
+        Function,
+        Error,
+        EvalError,
+        RangeError,
+        ReferenceError,
+        SyntaxError,
+        TypeError,
+        URIError,
+    } as GlobalObject;
+    // @ts-ignore
+    if (global.AggregateError) {
+        globalObject.AggregateError = AggregateError;
+    }
+    const realmRec = createRealmRecord(globalObject);
     return createShadowRealmByRealmRecord(realmRec);
 }
 
