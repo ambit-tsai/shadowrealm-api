@@ -118,15 +118,7 @@ function createRealmRecordInContext({
         set: val => esm.exports!.default = val,
     });
     defineProperty(globalObject, '__import', {
-        value: (specifier: string) => new intrinsics.Promise((resolve, reject) => {
-            esm.import(specifier).then(resolve, error => {
-                try {
-                    wrapError(error, realmRec);
-                } catch (newError) {
-                    reject(newError);
-                }
-            });
-        }),
+        value: (specifier: string) => esm.import(specifier),
     });
 
     return realmRec;

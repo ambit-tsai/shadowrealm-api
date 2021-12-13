@@ -69,7 +69,9 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
     const {
         TypeError,
         Object: { defineProperty },
-        Promise,
+        Promise: {
+            prototype: { then },
+        },
         String: {
             prototype: { replace },
         },
@@ -110,20 +112,14 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
         importValue(specifier: string, bindingName: string): Promise<any> {
             specifier += '';
             bindingName += '';
-            return new Promise((resolve, reject) => {
-                this.__realm!.esm
-                    .import(specifier)
-                    .then((module: Record<PropertyKey, any>) => {
-                        if (!(bindingName in module)) {
-                            throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
-                        }
-                        const result = utils.getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
-                        resolve(result);
-                    }, error => {
-                        utils.wrapError(error, globalRealmRec);
-                    })
-                    .catch(reject);
-            });
+            return utils.safeApply(then, this.__realm!.esm.import(specifier, globalRealmRec), [
+                (module: Record<PropertyKey, any>) => {
+                    if (!(bindingName in module)) {
+                        throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
+                    }
+                    return utils.getWrappedValue(globalRealmRec, module[bindingName], this.__realm!);
+                },
+            ]);
         }
 
     }
