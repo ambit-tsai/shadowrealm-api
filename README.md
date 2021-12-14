@@ -1,5 +1,5 @@
 # ShadowRealm API Polyfill
-A implementation of the [ShadowRealm API Proposal](https://tc39.es/proposal-shadowrealm).
+A implementation of the [ShadowRealm API Proposal](https://tc39.es/proposal-shadowrealm), and has more than 100 test cases.
 ```ts
 declare class ShadowRealm {
     constructor();
@@ -15,47 +15,62 @@ npm i -S shadowrealm-api
 
 
 ## Usage
-### For browser
-1. Po**n**yfill: non-invasive
+### Po**n**yfill: non-invasive
 ```javascript
 import ShadowRealm from 'shadowrealm-api'
 
 const realm = new ShadowRealm();
 ```
-2. Po**l**yfill: patch up the global object
+
+### Po**l**yfill: patch up the global object
 ```javascript
 import 'shadowrealm-api/browser/polyfill'
 
 const realm = new ShadowRealm();
 ```
-> Limitations: 
-> 1. All code evaluated inside a ShadowRealm runs in strict mode;
-> 1. Partial support for ES Module;
 
-### For node.js
-1. Ponyfill
-```javascript
-const ShadowRealm = require('shadowrealm-api/node');
 
+## Debugging Skill
+It will output debugging info when the private property `__debug` is true.
+```js
 const realm = new ShadowRealm();
+realm.__debug = true;
 ```
-2. Polyfill
-```javascript
-require('shadowrealm-api/node/polyfill');
 
-const realm = new ShadowRealm();
+
+## Limitations
+1. All code evaluated inside a ShadowRealm runs in strict mode;
+2. The ESM statement must not contain redundant comments;
+```js
+// ❌
+import/* */defaultExport from "module-name";
+export default/* */'xxx';
+
+// ✅
+import defaultExport from "module-name";
+export default 'xxx';
+```
+3. Exporting variable declarations is not supported;
+```js
+// ❌
+export const object = {/* ... */}, FunctionName = () => {/* ... */}；
+
+// ✅
+const object = {/* ... */};
+const FunctionName = () => {/* ... */}；
+export { object, FunctionName };
 ```
 
 
 ## Compatibility
-||Node.js|IE|Edge|Firefox|Chrome|Safari|Opera|
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|Without ESM|4.9.1|10|12|4|13|6|12.1|
-|With ESM|9.6.0<sup>[1]</sup>|-|12<sup>[2]</sup>|29<sup>[2]</sup>|32<sup>[2]</sup>|8<sup>[2]</sup>|19<sup>[2]</sup>|
-|With ESM|9.6.0<sup>[1]</sup>|-|14|39|42|10.1|29|
+|IE|Edge|Firefox|Chrome|Safari|Opera|
+|:-:|:-:|:-:|:-:|:-:|:-:|
+|10<sup>[1]</sup>|12<sup>[1]</sup>|4<sup>[1]</sup>|13<sup>[1]</sup>|6<sup>[1]</sup>|12.1<sup>[1]</sup>|
+||14|41|49|8<sup>[2]</sup>|36|
+|||||10.1||
 
 > Notes:
-> 1. Enable ES Module support in Node.js vm with `--experimental-vm-modules` option;
+> 1. Without ES Module;
 > 2. Available in browser with `fetch` polyfill;
 
 
