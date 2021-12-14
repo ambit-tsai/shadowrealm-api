@@ -5,7 +5,10 @@ import { exportedNames, moduleSpecifiers, patternAndReplacers } from './helpers'
 
 export default class ESModule {
     realmRec: RealmRecord;
-    cache: Record<string, object> = {};
+    cache: Record<string, {
+        exports: object,
+        promise?: Promise<any>,
+    }> = {};
     exports?: Record<PropertyKey, any>;
     
     constructor(realmRec: RealmRecord) {
@@ -14,18 +17,22 @@ export default class ESModule {
 
     get(specifier: string): object {
         if (this.cache[specifier]) {
-            return this.cache[specifier];
+            return this.cache[specifier].exports;
         }
         throw new this.realmRec.intrinsics.Error('Module does not exist');
     }
 
     import(specifier: string, realmRec = this.realmRec): Promise<object> {
         const { Promise } = realmRec.intrinsics;
-        if (this.cache[specifier]) {
-            return Promise.resolve(this.cache[specifier]);
+        let module = this.cache[specifier];
+        if (!module) {
+            module = this.cache[specifier] = {} as any;
+        }
+        if (module.exports) {
+            return Promise.resolve(module.exports);
         }
         return new Promise((resolve, reject) => {
-            fetch(specifier, {
+            module.promise = fetch(specifier, {
                 credentials: 'include',
             })
             .then((response: Response) => response.text())
@@ -34,7 +41,8 @@ export default class ESModule {
                 const modules = [];
                 for (let name of froms) {
                     name = name.substring(1, name.length - 1);
-                    modules.push(this.cache[name] || this.import(name));
+                    const module = this.cache[name] || {};
+                    modules.push(module.exports || module.promise || this.import(name));
                 }
                 return Promise.all(modules).then(() => text);
             })
@@ -51,8 +59,9 @@ export default class ESModule {
                 this.exports = exports;
                 this.realmRec.globalObject.eval(text);
                 this.exports = undefined;
-                this.cache[specifier] = exports;
                 resolve(exports);
+                module.exports = exports;
+                delete module.promise;
             })
             .catch(error => {
                 try {
