@@ -23,6 +23,7 @@ export function createShadowRealm(): ShadowRealmConstructor {
         'Object',
         'Promise',
         'String',
+        'Symbol',
         'Error',
         'EvalError',
         'RangeError',
@@ -75,9 +76,10 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
         String: {
             prototype: { replace },
         },
+        Symbol,
     } = globalRealmRec.intrinsics;
     
-    return class ShadowRealm {
+    const Ctor = class ShadowRealm {
         __realm?: RealmRecord;
         __debug?: boolean;
     
@@ -123,4 +125,13 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
         }
 
     }
+
+    if (Symbol?.toStringTag) {
+        defineProperty(Ctor, Symbol.toStringTag, {
+            configurable: true,
+            value: 'ShadowRealm',
+        });
+    }
+
+    return Ctor;
 }
