@@ -35,16 +35,17 @@ export default class ESModule {
             module.promise = fetch(specifier, {
                 credentials: 'include',
             })
-            .then((response: Response) => response.text())
-            .then((sourceText: string) => {
-                const [text, froms] = this.transform(sourceText);
-                const modules = [];
-                for (let name of froms) {
-                    name = name.substring(1, name.length - 1);
-                    const module = this.cache[name] || {};
-                    modules.push(module.exports || module.promise || this.import(name));
-                }
-                return Promise.all(modules).then(() => text);
+            .then((response: Response) => {
+                return response.text().then((sourceText: string) => {
+                    const [text, froms] = this.transform(sourceText);
+                    const modules = [];
+                    for (let name of froms) {
+                        name = name.substring(1, name.length - 1);
+                        const module = this.cache[name] || {};
+                        modules.push(module.exports || module.promise || this.import(name));
+                    }
+                    return Promise.all(modules).then(() => `var __meta = {url:'${response.url}'};${text}`);
+                });
             })
             .then((text: string) => {
                 if (this.realmRec.debug) {
