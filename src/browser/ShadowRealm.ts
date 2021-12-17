@@ -127,7 +127,7 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
     }
 
     if (Symbol?.toStringTag) {
-        defineProperty(Ctor, Symbol.toStringTag, {
+        defineProperty(Ctor.prototype, Symbol.toStringTag, {
             configurable: true,
             value: 'ShadowRealm',
         });
