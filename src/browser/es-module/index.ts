@@ -1,5 +1,5 @@
 import type { RealmRecord } from '../RealmRecord';
-import { wrapError } from '../utils';
+import { globalObject, wrapError } from '../utils';
 import { exportedNames, moduleSpecifiers, patternAndReplacers } from './helpers';
 
 
@@ -52,7 +52,7 @@ export default class ESModule {
                     console.log('[DEBUG]', specifier, text);
                 }
                 const exports = Object.create(null);
-                if (window.Symbol?.toStringTag) {
+                if (globalObject.Symbol?.toStringTag) {
                     Object.defineProperty(exports, Symbol.toStringTag, {
                         value: 'Module',
                     });
@@ -81,6 +81,9 @@ export default class ESModule {
             sourceText = sourceText.replace(p, r);
         }
         if (exportedNames.length) {
+            for (let i = exportedNames.length - 1; i >=0; --i) {
+                exportedNames[i] = `${exportedNames[i]}:${exportedNames[i]}`;
+            }
             sourceText += `;__export = {${exportedNames.join()}};`;
         }
         return [

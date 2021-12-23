@@ -1,4 +1,5 @@
-import { createShadowRealm, ShadowRealmConstructor } from './ShadowRealm';
+import { globalObject } from './utils';
+import { createShadowRealm } from './ShadowRealm';
 
-// @ts-ignore
-export default window.ShadowRealm as ShadowRealmConstructor || createShadowRealm();
+
+export default globalObject.ShadowRealm || createShadowRealm(globalObject);

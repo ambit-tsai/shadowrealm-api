@@ -1,4 +1,4 @@
-import type { ShadowRealm, Utils } from './ShadowRealm';
+import type { BuiltinShadowRealm, Utils } from './ShadowRealm';
 import { GlobalObject } from './utils';
 import ESModule from './es-module';
 
@@ -14,7 +14,7 @@ const codeOfCreateRealmRecord = `(${createRealmRecordInContext.toString()})`;
 
 const waitForGarbageCollection: (
     realmRec: RealmRecord,
-    shadowRealm: ShadowRealm,
+    shadowRealm: BuiltinShadowRealm,
     iframe: HTMLIFrameElement,
 ) => void = window.FinalizationRegistry
     ? ({ intrinsics }, shadowRealm, iframe) => {
@@ -31,7 +31,7 @@ const waitForGarbageCollection: (
 export function createRealmRecord(
     parentRealmRec: RealmRecord,
     utils: Utils,
-    shadowRealm: ShadowRealm,
+    shadowRealm: BuiltinShadowRealm,
 ): RealmRecord {
     const { document } = parentRealmRec.intrinsics;
     const iframe = document.createElement('iframe');
@@ -44,11 +44,10 @@ export function createRealmRecord(
 
 
 function createRealmRecordInContext({
-    createShadowRealmByRealmRecord,
+    defineShadowRealm,
     ESModule,
     assign,
     globalReservedProperties,
-    wrapError,
     safeApply,
     dynamicImportPattern,
     dynamicImportReplacer,
@@ -62,9 +61,9 @@ function createRealmRecordInContext({
 
     // Handle window object
     for (const key of getOwnPropertyNames(win) as any[]) {
-        const descriptor = <PropertyDescriptor> Object.getOwnPropertyDescriptor(win, key);
-        defineProperty(intrinsics, key, descriptor);
+        intrinsics[key] = win[key];
         const isReserved = globalReservedProperties.indexOf(key) !== -1;
+        const descriptor = <PropertyDescriptor> Object.getOwnPropertyDescriptor(win, key);
         if (key === 'eval') {
             defineEval();
         } else if (isReserved) {
@@ -96,15 +95,9 @@ function createRealmRecordInContext({
     globalObject.globalThis = globalObject;
     globalObject.Function = createFunction();
     
-    const realmRec = {
-        intrinsics,
-        globalObject,
-    } as RealmRecord;
-    defineProperty(globalObject, 'ShadowRealm', {
-        configurable: true,
-        writable: true,
-        value: createShadowRealmByRealmRecord(realmRec),
-    });
+    const realmRec = { intrinsics, globalObject } as RealmRecord;
+    defineShadowRealm(globalObject, realmRec);
+
     // Add helpers for ES Module
     const esm = new ESModule(realmRec);
     realmRec.esm = esm;
@@ -146,7 +139,9 @@ function createRealmRecordInContext({
         const safeEval = intrinsics.Function('with(this)return eval(arguments[0])');
         return {
             eval(x: string) {
-                x = safeApply(replace, `'use strict';${x}`, [
+                // `'use strict'` is used to enable strict mode
+                // `undefined`  is used to ensure that the return value remains unchanged 
+                x = safeApply(replace, `'use strict';undefined;${x}`, [
                     dynamicImportPattern,
                     dynamicImportReplacer,
                 ]);
@@ -175,6 +170,7 @@ function createRealmRecordInContext({
                 return safeApply(safeFn, ctx, arguments);
             };
         }
+        Function.prototype = RawFunction.prototype;
         RawFunction.prototype.constructor = Function;
         return Function as any;
     }

@@ -13,7 +13,7 @@ export const dynamicImportReplacer = (m: string) => `__${m}`;
 const aliasPattern = /([^\s,]+)\s+as\s+([^\s,]+)/g;
 
 
-export const patternAndReplacers: { p: RegExp, r: string | ((...args: any[]) => any) }[] = [
+export const patternAndReplacers: { p: RegExp, r: any }[] = [
     {
         /**
          * Syntax:
@@ -39,7 +39,7 @@ export const patternAndReplacers: { p: RegExp, r: string | ((...args: any[]) => 
                 return p1;
             } else if (p6) {
                 // MATCH: export function FunctionName(){...}
-                return `__export = {${p6}}; ${p1}`
+                return `__export = {${p6}:${p6}}; ${p1}`
             } else {
                 // MATCH: export class ClassName {...}
                 exportedNames.push(p7);

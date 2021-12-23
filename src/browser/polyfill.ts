@@ -1,4 +1,7 @@
-import ShadowRealm from '.';
+import { globalObject } from './utils';
+import { defineShadowRealm } from './ShadowRealm';
 
-// @ts-ignore
-if (!window.ShadowRealm) window.ShadowRealm = ShadowRealm;
+
+if (!globalObject.ShadowRealm) {
+    defineShadowRealm(globalObject);
+}

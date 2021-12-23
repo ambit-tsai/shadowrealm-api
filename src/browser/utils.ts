@@ -1,3 +1,4 @@
+import type { BuiltinShadowRealm } from './ShadowRealm';
 import type { RealmRecord } from './RealmRecord';
 
 
@@ -16,6 +17,7 @@ export const globalReservedProperties = [
     'decodeURIComponent',
     'encodeURI',
     'encodeURIComponent',
+    'AggregateError',
     'Array',
     'ArrayBuffer',
     'BigInt',
@@ -65,12 +67,17 @@ export const globalReservedProperties = [
 ] as const;
 
 
-export type GlobalObject = typeof window;
+export type GlobalObject = Omit<typeof window, 'globalThis'> & {
+    globalThis: GlobalObject,
+    ShadowRealm?: BuiltinShadowRealm,
+};
+
+export const globalObject: GlobalObject = window as any;
 
 
 const { apply } = Function.prototype;
 
-export const safeApply = window.Reflect?.apply || function (fn: Function, ctx: any, args: ArrayLike<any>) {
+export const safeApply = globalObject.Reflect?.apply || function (fn: Function, ctx: any, args: ArrayLike<any>) {
     return apply.call(fn, ctx, args);
 };
 
@@ -89,6 +96,16 @@ export function getWrappedValue<T>(
 }
 
 
+type ParamsForWrappedFunction = [
+    RealmRecord,
+    Function,
+    RealmRecord,
+    typeof getWrappedValue,
+    typeof safeApply,
+    typeof wrapError,
+];
+
+
 const codeOfWrappedFunction = `return ${wrappedFunctionInContext.toString()}`;
 
 
@@ -97,37 +114,27 @@ function createWrappedFunction(
     targetFunction: Function,
     targetRealm: RealmRecord,
 ) {
-    return callerRealm.intrinsics.Function('params', codeOfWrappedFunction)({
-        getWrappedValue,
+    return callerRealm.intrinsics.Function('params', codeOfWrappedFunction)([
         callerRealm,
         targetFunction,
         targetRealm,
+        getWrappedValue,
         safeApply,
         wrapError,
-    });
+    ] as ParamsForWrappedFunction);
 }
 
 
-type ParamsForWrappedFunction = {
-    getWrappedValue: typeof getWrappedValue,
-    callerRealm: RealmRecord,
-    targetFunction: Function,
-    targetRealm: RealmRecord,
-    safeApply: typeof safeApply,
-    wrapError: typeof wrapError,
-};
-
-
 function wrappedFunctionInContext(this: any) {
-    const {
-        getWrappedValue,
+    const [
         callerRealm,
         targetFunction,
         targetRealm,
+        getWrappedValue,
         safeApply,
         wrapError,
         // @ts-ignore: `params` is in parent scope
-    } = params as ParamsForWrappedFunction;
+    ] = params as ParamsForWrappedFunction;
     try {
         const wrappedArgs: any[] = [];
         for (let i = 0, { length } = arguments; i < length; ++i) {
@@ -142,22 +149,15 @@ function wrappedFunctionInContext(this: any) {
 }
 
 
-export function wrapError(error: any, realmRec: RealmRecord): never {
+export function wrapError(error: any, { intrinsics }: RealmRecord) {
     const isObject = typeof error === 'object' && error;
-    // @ts-ignore: They are in the same context if the same `hasOwnProperty` is available.
-    if ((isObject || typeof error === 'function') && error.hasOwnProperty !== realmRec.hasOwnProperty) {
-        if (isObject
-            && typeof error.name === 'string'
-            && /Error$/.test(error.name)
-            && error.name in realmRec.intrinsics
-        ) {
-            // @ts-ignore
-            error = new realmRec.intrinsics[error.name](error.message);
-        } else {
-            error += '';
+    if (isObject) {
+        if (error.name === 'SyntaxError') {
+            throw new intrinsics.SyntaxError(error.message);
         }
+        throw new intrinsics.TypeError(`Cross-Realm Error: ${error.name}: ${error.message}`)
     }
-    throw error;
+    throw new intrinsics.TypeError(`Cross-Realm Error: ${error}`);
 }
 
 
