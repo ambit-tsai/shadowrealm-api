@@ -1,4 +1,4 @@
-import type { ShadowRealm } from '../../index';
+import type ShadowRealm from '../../index';
 import { createRealmRecord, RealmRecord } from './RealmRecord';
 import { dynamicImportPattern, dynamicImportReplacer } from './es-module/helpers';
 import ESModule from './es-module';
