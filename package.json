@@ -7,10 +7,13 @@
     "email": "ambit_tsai@qq.com"
   },
   "license": "Apache-2.0",
-  "main": "browser/index.js",
+  "main": "browser/index.umd.js",
+  "module": "browser/index.mjs",
   "scripts": {
     "build": "node scripts/build.js",
-    "test": "test262-harness --hostType=chrome --hostPath='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --transformer=test/transformer.js --prelude=dist/browser/polyfill.umd.js --prelude=test/browser-helpers.js --test262Dir=test 'test/common/**/*.js'"
+    "test": "test262-harness --hostType=chrome --hostPath='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --transformer=test/transformer.js --prelude=dist/browser/polyfill.umd.js --prelude=test/browser-helpers.js --test262Dir=test 'test/common/**/*.js'",
+    "test:docs": "vite -c docs-src/vite.config.ts",
+    "build:docs": "vite build -c docs-src/vite.config.ts"
   },
   "repository": {
     "type": "git",

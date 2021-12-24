@@ -12,11 +12,17 @@ const banner = require('./banner');
     });
     await fs.promises.mkdir('dist');
     compileForBrowser();
-    compileForNode();
+    // compileForNode();
+    copyFile('index.d.ts');
     copyFile('package.json');
     copyFile('README.md');
     copyFile('LICENSE');
 })();
+
+
+const terserPlugin = terser({
+    keep_fnames: /^ShadowRealm|evaluate|importValue|eval|Function$/,
+});
 
 
 async function compileForBrowser() {
@@ -27,14 +33,45 @@ async function compileForBrowser() {
         ],
         plugins: [
             typescript(),
-            terser(),
+            terserPlugin,
         ],
     });
     await bundle.write({
-        dir: 'dist',
+        dir: 'dist/browser',
         banner,
         format: 'esm',
-        entryFileNames: 'browser/[name].js',
+        entryFileNames: '[name].mjs',
+        sourcemap: true,
+    });
+
+    const polyfillBundle = await rollup.rollup({
+        input: 'src/browser/polyfill.ts',
+        plugins: [
+            typescript(),
+            terserPlugin,
+        ],
+    });
+    await polyfillBundle.write({
+        dir: 'dist/browser',
+        banner,
+        format: 'umd',
+        entryFileNames: '[name].umd.js',
+        sourcemap: true,
+    });
+
+    const indexBundle = await rollup.rollup({
+        input: 'src/browser/index.ts',
+        plugins: [
+            typescript(),
+            terserPlugin,
+        ],
+    });
+    await indexBundle.write({
+        dir: 'dist/browser',
+        banner,
+        format: 'umd',
+        entryFileNames: '[name].umd.js',
+        name: 'ShadowRealm',
         sourcemap: true,
     });
 }
