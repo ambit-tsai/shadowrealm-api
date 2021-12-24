@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="renderer" content="webkit">
+    <meta charset="UTF-8">
+    <title>ShadowRealm Online</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            background-color: #f3f3f3;
+        }
+        .content {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .title {
+            margin-top: 0;
+            text-align: center;
+            font-size: 24px;
+        }
+        .code  {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 3px;
+            background-color: #2b3a42;
+            font-size: 13px;
+            line-height: 19px;
+            color: aqua;
+        }
+    </style>
+</head>
+<body>
+    <main class="content">
+        <h1 class="title">ShadowRealm API</h1>
+        <pre class="code"></pre>
+        <p>Press F12 to open devtools for debugging</p>
+    </main>
+    <script src="./index.ts" type="module"></script>
+</body>
+</html>
