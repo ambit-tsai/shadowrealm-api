@@ -98,7 +98,7 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
             const result = this.__realm.globalObject.eval(sourceText);
             return utils.getWrappedValue(globalRealmRec, result, this.__realm);
         } catch (error) {
-            utils.wrapError(error, globalRealmRec);
+            utils.wrapError(error, globalRealmRec, this.__realm.debug);
         }
     }
     

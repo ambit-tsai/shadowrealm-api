@@ -144,12 +144,16 @@ function wrappedFunctionInContext(this: any) {
         const result = safeApply(targetFunction, targetRealm.globalObject, wrappedArgs);
         return getWrappedValue(callerRealm, result, targetRealm);
     } catch (error) {
-        wrapError(error, callerRealm);
+        wrapError(error, callerRealm, targetRealm.debug);
     }
 }
 
 
-export function wrapError(error: any, { intrinsics }: RealmRecord) {
+export function wrapError(error: any, { intrinsics }: RealmRecord, debug = false) {
+    if (debug) {
+        console.log('[DEBUG]');
+        console.error(error);
+    }
     const isObject = typeof error === 'object' && error;
     if (isObject) {
         if (error.name === 'SyntaxError') {

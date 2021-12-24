@@ -49,7 +49,7 @@ export default class ESModule {
             })
             .then((text: string) => {
                 if (this.realmRec.debug) {
-                    console.log('[DEBUG]', specifier, text);
+                    console.log('[DEBUG]', specifier, '\n' + text);
                 }
                 const exports = Object.create(null);
                 if (globalObject.Symbol?.toStringTag) {
@@ -66,7 +66,7 @@ export default class ESModule {
             })
             .catch(error => {
                 try {
-                    wrapError(error, realmRec);
+                    wrapError(error, realmRec, this.realmRec.debug);
                 } catch (newError) {
                     reject(newError);
                 }
