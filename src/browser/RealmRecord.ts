@@ -1,5 +1,5 @@
 import type { BuiltinShadowRealm, Utils } from './ShadowRealm';
-import { GlobalObject } from './utils';
+import { GlobalObject, topGlobal } from './utils';
 import ESModule from './es-module';
 
 export interface RealmRecord {
@@ -16,7 +16,7 @@ const waitForGarbageCollection: (
     realmRec: RealmRecord,
     shadowRealm: BuiltinShadowRealm,
     iframe: HTMLIFrameElement,
-) => void = window.FinalizationRegistry
+) => void = topGlobal.FinalizationRegistry
     ? ({ intrinsics }, shadowRealm, iframe) => {
         // TODO: need test
         const registry = new intrinsics.FinalizationRegistry((iframe: HTMLIFrameElement) => {
@@ -91,7 +91,7 @@ function createRealmRecordInContext({
             defineProperty(globalObject, key, { value: undefined });
         }
     }
-    // @ts-ignore: `globalThis` is writable
+    
     globalObject.globalThis = globalObject;
     globalObject.Function = createFunction();
     

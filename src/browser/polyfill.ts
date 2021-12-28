@@ -1,7 +1,7 @@
-import { globalObject } from './utils';
+import { topGlobal } from './utils';
 import { defineShadowRealm } from './ShadowRealm';
 
 
-if (!globalObject.ShadowRealm) {
-    defineShadowRealm(globalObject);
+if (!topGlobal.ShadowRealm) {
+    defineShadowRealm(topGlobal);
 }

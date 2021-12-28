@@ -72,12 +72,12 @@ export type GlobalObject = Omit<typeof window, 'globalThis'> & {
     ShadowRealm?: BuiltinShadowRealm,
 };
 
-export const globalObject: GlobalObject = window as any;
+export const topGlobal: GlobalObject = window as any;
 
 
 const { apply } = Function.prototype;
 
-export const safeApply = globalObject.Reflect?.apply || function (fn: Function, ctx: any, args: ArrayLike<any>) {
+export const safeApply = topGlobal.Reflect?.apply || function (fn: Function, ctx: any, args: ArrayLike<any>) {
     return apply.call(fn, ctx, args);
 };
 

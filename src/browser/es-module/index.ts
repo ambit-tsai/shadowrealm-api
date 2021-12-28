@@ -1,5 +1,5 @@
 import type { RealmRecord } from '../RealmRecord';
-import { globalObject, wrapError } from '../utils';
+import { topGlobal, wrapError } from '../utils';
 import { exportedNames, moduleSpecifiers, patternAndReplacers } from './helpers';
 
 
@@ -52,7 +52,7 @@ export default class ESModule {
                     console.log('[DEBUG]', specifier, '\n' + text);
                 }
                 const exports = Object.create(null);
-                if (globalObject.Symbol?.toStringTag) {
+                if (topGlobal.Symbol?.toStringTag) {
                     Object.defineProperty(exports, Symbol.toStringTag, {
                         value: 'Module',
                     });

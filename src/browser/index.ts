@@ -1,5 +1,5 @@
-import { globalObject } from './utils';
+import { topGlobal } from './utils';
 import { createShadowRealm } from './ShadowRealm';
 
 
-export default globalObject.ShadowRealm || createShadowRealm(globalObject);
+export default topGlobal.ShadowRealm || createShadowRealm(topGlobal);
