@@ -9,6 +9,7 @@ import {
     safeApply,
     wrapError,
     GlobalObject,
+    shared,
 } from './utils';
 
 
@@ -56,6 +57,7 @@ const utils = {
     globalReservedProperties,
     safeApply,
     wrapError,
+    shared,
 };
 
 
@@ -74,17 +76,22 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
     } = globalRealmRec.intrinsics;
     const { replace } = String.prototype;
     
-    function ShadowRealm(this: BuiltinShadowRealm) {
+    const Ctor = function ShadowRealm(this: BuiltinShadowRealm) {
         if (!(this instanceof ShadowRealm)) {
             throw new TypeError('Constructor requires a new operator');
         }
         const realmRec = utils.createRealmRecord(globalRealmRec, utils, this);
         defineProperty(this, '__realm', { value: realmRec });
-        defineProperty(this, '__debug', {
-            get: () => realmRec.debug,
-            set: val => realmRec.debug = val,
-        });
-    }
+    };
+
+    defineProperty(Ctor, '__debug', {
+        get: () => !!utils.shared.debug,
+        set: val => utils.shared.debug = val,
+    });
+    defineProperty(Ctor, '__shims', {
+        get: () => String(utils.shared.shims),
+        set: val => utils.shared.shims = val,
+    });
     
     function evaluate(this: BuiltinShadowRealm, sourceText: string) {
         if (typeof sourceText !== 'string') {
@@ -98,7 +105,7 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
             const result = this.__realm.globalObject.eval(sourceText);
             return utils.getWrappedValue(globalRealmRec, result, this.__realm);
         } catch (error) {
-            utils.wrapError(error, globalRealmRec, this.__realm.debug);
+            utils.wrapError(error, globalRealmRec);
         }
     }
     
@@ -115,22 +122,23 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
         ]);
     }
 
-    defineProperty(ShadowRealm.prototype, 'evaluate', {
+    const { prototype } = Ctor;
+    defineProperty(prototype, 'evaluate', {
         configurable: true,
         writable: true,
         value: evaluate,
     });
-    defineProperty(ShadowRealm.prototype, 'importValue', {
+    defineProperty(prototype, 'importValue', {
         configurable: true,
         writable: true,
         value: importValue,
     });
     if (Symbol?.toStringTag) {
-        defineProperty(ShadowRealm.prototype, Symbol.toStringTag, {
+        defineProperty(prototype, Symbol.toStringTag, {
             configurable: true,
             value: 'ShadowRealm',
         });
     }
 
-    return ShadowRealm;
+    return Ctor;
 }

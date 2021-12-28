@@ -1,5 +1,5 @@
 import type { RealmRecord } from '../RealmRecord';
-import { topGlobal, wrapError } from '../utils';
+import { shared, topGlobal, wrapError } from '../utils';
 import { exportedNames, moduleSpecifiers, patternAndReplacers } from './helpers';
 
 
@@ -48,7 +48,7 @@ export default class ESModule {
                 });
             })
             .then((text: string) => {
-                if (this.realmRec.debug) {
+                if (shared.debug) {
                     console.log('[DEBUG]', specifier, '\n' + text);
                 }
                 const exports = Object.create(null);
@@ -66,7 +66,7 @@ export default class ESModule {
             })
             .catch(error => {
                 try {
-                    wrapError(error, realmRec, this.realmRec.debug);
+                    wrapError(error, realmRec);
                 } catch (newError) {
                     reject(newError);
                 }

@@ -75,6 +75,12 @@ export type GlobalObject = Omit<typeof window, 'globalThis'> & {
 export const topGlobal: GlobalObject = window as any;
 
 
+export const shared = {
+    debug: false,
+    shims: [] as string[],
+};
+
+
 const { apply } = Function.prototype;
 
 export const safeApply = topGlobal.Reflect?.apply || function (fn: Function, ctx: any, args: ArrayLike<any>) {
@@ -144,13 +150,13 @@ function wrappedFunctionInContext(this: any) {
         const result = safeApply(targetFunction, targetRealm.globalObject, wrappedArgs);
         return getWrappedValue(callerRealm, result, targetRealm);
     } catch (error) {
-        wrapError(error, callerRealm, targetRealm.debug);
+        wrapError(error, callerRealm);
     }
 }
 
 
-export function wrapError(error: any, { intrinsics }: RealmRecord, debug = false) {
-    if (debug) {
+export function wrapError(error: any, { intrinsics }: RealmRecord) {
+    if (shared.debug) {
         console.log('[DEBUG]');
         console.error(error);
     }
