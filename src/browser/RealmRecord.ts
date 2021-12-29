@@ -86,7 +86,7 @@ function createRealmRecordInContext({
     if (intrinsics.Symbol?.unscopables) {
         // Prevent escape from the `with` environment 
         defineProperty(globalObject, intrinsics.Symbol.unscopables, {
-            value: Object.preventExtensions(Object.create(null)),
+            value: Object.seal(Object.create(null)),
         });
     }
     // Intercept the props of EventTarget.prototype

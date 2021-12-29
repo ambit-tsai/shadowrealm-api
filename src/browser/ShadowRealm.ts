@@ -15,7 +15,6 @@ import {
 
 export interface BuiltinShadowRealm extends ShadowRealm { 
     __realm: RealmRecord;
-    __debug: boolean;
 }
 
 
@@ -84,14 +83,17 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
         defineProperty(this, '__realm', { value: realmRec });
     };
 
-    defineProperty(Ctor, '__debug', {
-        get: () => !!utils.shared.debug,
-        set: val => utils.shared.debug = val,
-    });
-    defineProperty(Ctor, '__shims', {
-        get: () => String(utils.shared.shims),
-        set: val => utils.shared.shims = val,
-    });
+    // `__debug` and `__shims` are enabled only on the top window
+    if (!globalRealmRec.intrinsics.top) {
+        defineProperty(Ctor, '__debug', {
+            get: () => utils.shared.debug,
+            set: val => utils.shared.debug = val,
+        });
+        defineProperty(Ctor, '__shims', {
+            get: () => utils.shared.shims,
+            set: val => utils.shared.shims = val,
+        });
+    }
     
     function evaluate(this: BuiltinShadowRealm, sourceText: string) {
         if (typeof sourceText !== 'string') {
