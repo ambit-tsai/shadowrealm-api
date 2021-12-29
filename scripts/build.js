@@ -16,6 +16,7 @@ const banner = require('./banner');
     copyFile('index.d.ts');
     copyFile('package.json');
     copyFile('README.md');
+    copyFile('README.zh-CN.md');
     copyFile('LICENSE');
 })();
 
