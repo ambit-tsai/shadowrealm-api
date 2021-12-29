@@ -1,7 +1,7 @@
+import './index.css';
 import '../src/browser/polyfill'
 
-const el = document.querySelector('.code');
-el.textContent = `
+const code = `
 class ShadowRealm {
     constructor();
     evaluate(sourceText: string): Primitive | Function;
@@ -9,3 +9,8 @@ class ShadowRealm {
 }
 
 `;
+
+setTimeout(() => {
+    const el = document.querySelector('.code');
+    el.textContent = code;
+});
