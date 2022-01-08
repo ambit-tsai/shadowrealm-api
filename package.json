@@ -1,6 +1,6 @@
 {
   "name": "shadowrealm-api",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "ShadowRealm polyfill for browser",
   "author": {
     "name": "Ambit Tsai",
@@ -31,7 +31,7 @@
     "test262-harness": "~9.0.0",
     "tslib": "~2.3.1",
     "typescript": "~4.5.2",
-    "vite": "^2.7.2"
+    "vite": "~2.7.2"
   },
   "keywords": [
     "shadowrealm",

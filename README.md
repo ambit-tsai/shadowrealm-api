@@ -41,7 +41,7 @@ ShadowRealm.__debug = true;
 
 
 ## Limitations
-1. All code evaluated inside a ShadowRealm runs in strict mode;
+1. All code evaluated inside a ShadowRealm runs in **strict mode**;
 2. The ESM statement must not contain redundant comments;
 ```js
 // ❌
@@ -66,7 +66,7 @@ export { obj, fn };
 ## Compatibility
 |IE|Edge|Firefox|Chrome|Safari|Opera|
 |:-:|:-:|:-:|:-:|:-:|:-:|
-|10<sup>[1][2][3]</sup>|12<sup>[1][2][3]</sup>|4<sup>[1][2][3]</sup>|13<sup>[1][2][3]</sup>|6<sup>[1][2][3]</sup>|12.1<sup>[1][2][3]</sup>|
+|10<sup>[1][2][3]</sup>|12<sup>[1][2][3]</sup>|19<sup>[1][2][3]</sup>|19<sup>[1][2][3]</sup>|6<sup>[1][2][3]</sup>|15<sup>[1][2][3]</sup>|
 ||14|29<sup>[1][3]</sup>|32<sup>[1][3]</sup>|8<sup>[3]</sup>|19<sup>[1][3]</sup>|
 |||41|49|10.1|36|
 
@@ -90,6 +90,6 @@ ShadowRealm.__shims = [
 
 
 ## Contact
-1. WeChat: ambit_tsai
+1. WeChat: cai_fanwei
 1. QQ Group: 663286147
 1. E-mail: ambit_tsai@qq.com

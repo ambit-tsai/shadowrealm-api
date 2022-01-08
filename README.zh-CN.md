@@ -42,7 +42,7 @@ ShadowRealm.__debug = true;
 
 
 ## 限制
-1. 在 ShadowRealm 中运行的所有代码都处于严格模式下；
+1. 在 ShadowRealm 中运行的所有代码都处于**严格模式**下；
 2. ESM 语句不能含有冗余的注释；
 ```js
 // ❌
@@ -67,7 +67,7 @@ export { obj, fn };
 ## 兼容性
 |IE|Edge|Firefox|Chrome|Safari|Opera|
 |:-:|:-:|:-:|:-:|:-:|:-:|
-|10<sup>[1][2][3]</sup>|12<sup>[1][2][3]</sup>|4<sup>[1][2][3]</sup>|13<sup>[1][2][3]</sup>|6<sup>[1][2][3]</sup>|12.1<sup>[1][2][3]</sup>|
+|10<sup>[1][2][3]</sup>|12<sup>[1][2][3]</sup>|19<sup>[1][2][3]</sup>|19<sup>[1][2][3]</sup>|6<sup>[1][2][3]</sup>|15<sup>[1][2][3]</sup>|
 ||14|29<sup>[1][3]</sup>|32<sup>[1][3]</sup>|8<sup>[3]</sup>|19<sup>[1][3]</sup>|
 |||41|49|10.1|36|
 
@@ -91,6 +91,6 @@ ShadowRealm.__shims = [
 
 
 ## 联系
-1. 微信: ambit_tsai
+1. 微信: cai_fanwei
 1. QQ群: 663286147
 1. 邮箱: ambit_tsai@qq.com
