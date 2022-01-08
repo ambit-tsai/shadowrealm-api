@@ -112,7 +112,7 @@ type ParamsForWrappedFunction = [
 ];
 
 
-const codeOfWrappedFunction = `return ${wrappedFunctionInContext.toString()}`;
+const codeOfWrappedFunction = 'return ' + wrappedFunctionInContext.toString();
 
 
 function createWrappedFunction(
@@ -142,9 +142,10 @@ function wrappedFunctionInContext(this: any) {
         // @ts-ignore: `params` is in parent scope
     ] = params as ParamsForWrappedFunction;
     try {
+        const args = arguments;
         const wrappedArgs: any[] = [];
-        for (let i = 0, { length } = arguments; i < length; ++i) {
-            const wrappedValue = getWrappedValue(targetRealm, arguments[i], callerRealm);
+        for (let i = 0, { length } = args; i < length; ++i) {
+            const wrappedValue = getWrappedValue(targetRealm, args[i], callerRealm);
             wrappedArgs.push(wrappedValue);
         }
         const result = safeApply(targetFunction, targetRealm.globalObject, wrappedArgs);
@@ -165,9 +166,9 @@ export function wrapError(error: any, { intrinsics }: RealmRecord) {
         if (error.name === 'SyntaxError') {
             throw new intrinsics.SyntaxError(error.message);
         }
-        throw new intrinsics.TypeError(`Cross-Realm Error: ${error.name}: ${error.message}`)
+        throw new intrinsics.TypeError('Cross-Realm Error: ' + error.name + ': ' + error.message)
     }
-    throw new intrinsics.TypeError(`Cross-Realm Error: ${error}`);
+    throw new intrinsics.TypeError('Cross-Realm Error: ' + error);
 }
 
 
@@ -184,3 +185,6 @@ if (!assign) {
     };
 }
 export { assign }; 
+
+
+export const URL = topGlobal.URL || topGlobal.webkitURL;

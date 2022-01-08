@@ -1,5 +1,5 @@
 import type { RealmRecord } from '../RealmRecord';
-import { shared, topGlobal, wrapError } from '../utils';
+import { shared, topGlobal, wrapError, URL } from '../utils';
 import { exportedNames, moduleSpecifiers, patternAndReplacers } from './helpers';
 
 
@@ -23,17 +23,18 @@ export default class ESModule {
     }
 
     import(specifier: string, realmRec = this.realmRec): Promise<object> {
+        const { href } = new URL(specifier + '', location.href);
         const { Promise } = realmRec.intrinsics;
-        let module = this.cache[specifier];
+        let module = this.cache[href];
         if (!module) {
-            module = this.cache[specifier] = {} as any;
+            module = this.cache[href] = {} as any;
         }
         if (module.exports) {
             return Promise.resolve(module.exports);
         }
         return new Promise((resolve, reject) => {
-            module.promise = fetch(specifier, {
-                credentials: 'include',
+            module.promise = fetch(href, {
+                credentials: 'same-origin',
             })
             .then((response: Response) => {
                 return response.text().then((sourceText: string) => {
@@ -44,12 +45,12 @@ export default class ESModule {
                         const module = this.cache[name] || {};
                         modules.push(module.exports || module.promise || this.import(name));
                     }
-                    return Promise.all(modules).then(() => `var __meta = {url:'${response.url}'};${text}`);
+                    return Promise.all(modules).then(() => 'var __meta={url:"' + response.url + '"};'+ text);
                 });
             })
             .then((text: string) => {
                 if (shared.debug) {
-                    console.log('[DEBUG]', specifier, '\n' + text);
+                    console.log('[DEBUG]', href, '\n' + text);
                 }
                 const exports = Object.create(null);
                 if (topGlobal.Symbol?.toStringTag) {
@@ -82,9 +83,9 @@ export default class ESModule {
         }
         if (exportedNames.length) {
             for (let i = exportedNames.length - 1; i >=0; --i) {
-                exportedNames[i] = `${exportedNames[i]}:${exportedNames[i]}`;
+                exportedNames[i] += ':' + exportedNames[i];
             }
-            sourceText += `;__export = {${exportedNames.join()}};`;
+            sourceText += ';__export={' + exportedNames.join() + '}';
         }
         return [
             sourceText,
