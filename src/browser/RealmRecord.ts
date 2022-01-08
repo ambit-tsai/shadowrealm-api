@@ -9,7 +9,7 @@ export interface RealmRecord {
 }
 
 
-const codeOfCreateRealmRecord = `(${createRealmRecordInContext.toString()})`;
+const codeOfCreateRealmRecord = '(' + createRealmRecordInContext.toString() + ')';
 
 const waitForGarbageCollection: (
     realmRec: RealmRecord,
@@ -145,7 +145,7 @@ function createRealmRecordInContext({
             eval(x: string) {
                 // `'use strict'` is used to enable strict mode
                 // `undefined`  is used to ensure that the return value remains unchanged 
-                x = safeApply(replace, `'use strict';undefined;${x}`, [
+                x = safeApply(replace, '"use strict";undefined;' + x, [
                     dynamicImportPattern,
                     dynamicImportReplacer,
                 ]);
@@ -167,7 +167,7 @@ function createRealmRecordInContext({
                 dynamicImportPattern,
                 dynamicImportReplacer,
             ]);
-            const wrapFn = RawFunction(`with(this)return function(){'use strict';return ${rawFnStr}}`);
+            const wrapFn = RawFunction('with(this)return function(){"use strict";return ' + rawFnStr + '}');
             const safeFn: Function = safeApply(wrapFn, globalObject, [])();
             return function (this: any) {
                 const ctx = this === win ? undefined : this;

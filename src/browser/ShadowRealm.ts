@@ -44,7 +44,7 @@ export function createShadowRealm(globalObject: GlobalObject, realmRec?: RealmRe
 }
 
 
-const codeOfCreateShadowRealm = `(${createShadowRealmInContext.toString()})`;
+const codeOfCreateShadowRealm = '(' + createShadowRealmInContext.toString() + ')';
 const utils = {
     createRealmRecord,
     dynamicImportPattern,
@@ -117,7 +117,7 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
         return utils.safeApply(then, this.__realm.esm.import(specifier, globalRealmRec), [
             (module: Record<PropertyKey, any>) => {
                 if (!(bindingName in module)) {
-                    throw new TypeError(`"${specifier}" has no export named "${bindingName}"`);
+                    throw new TypeError('"'+specifier+'" has no export named "'+bindingName+'"');
                 }
                 return utils.getWrappedValue(globalRealmRec, module[bindingName], this.__realm);
             },

@@ -7,7 +7,7 @@ export const exportedNames: string[] = [];
  *   import("module-name");  =>  __import("module-name");
  */
 export const dynamicImportPattern = /\bimport\s*(\(|\/[/*])/g;
-export const dynamicImportReplacer = (m: string) => `__${m}`;
+export const dynamicImportReplacer = (m: string) => '__' + m;
 
 
 const aliasPattern = /([^\s,]+)\s+as\s+([^\s,]+)/g;
@@ -39,7 +39,7 @@ export const patternAndReplacers: { p: RegExp, r: any }[] = [
                 return p1;
             } else if (p6) {
                 // MATCH: export function FunctionName(){...}
-                return `__export = {${p6}:${p6}}; ${p1}`
+                return '__export={' + p6 + ':' + p6 + '};' + p1;
             } else {
                 // MATCH: export class ClassName {...}
                 exportedNames.push(p7);
@@ -59,12 +59,12 @@ export const patternAndReplacers: { p: RegExp, r: any }[] = [
             p3: string, p4: string, p5: string,
         ) {
             if (p4) {
-                return `__default = ${p4}; ${p1}`
+                return '__default=' + p4 + ';' + p1;
             } else if (p5) {
                 exportedNames.push(p5);
                 return p1;
             }
-            return m.replace(/export\s+default/, '__default =');
+            return m.replace(/export\s+default/, '__default=');
         },
     },
     {
@@ -85,10 +85,10 @@ export const patternAndReplacers: { p: RegExp, r: any }[] = [
                 moduleSpecifiers.push(p4);
                 if (p3) {
                     // MATCH: export * as name1 from …; // Draft ECMAScript® 2O21
-                    return `__export = { ${p3}: __from(${p4}) }`;
+                    return '__export={' + p3 + ':__from(' + p4 + ')}';
                 } else {
                     // MATCH: export * from …; // does not set the default export
-                    return `__export = __from(${p4})`;
+                    return '__export=__from(' + p4 + ')';
                 }
             }
             if (p7) {
@@ -99,7 +99,7 @@ export const patternAndReplacers: { p: RegExp, r: any }[] = [
                 const params = p5.replace(/([^\s,]+)(\s*,|\s+as\s+([^\s,]+))?/g, (m: string, p1: string, p2: string, p3: string) => {
                     if (p3) {
                         exports.push(p3);
-                        return `${p1}:${p3}`;
+                        return p1 + ':' + p3;
                     } else if (p1 === 'default') {
                         hasDefaultExport = true;
                         return '';
@@ -109,16 +109,16 @@ export const patternAndReplacers: { p: RegExp, r: any }[] = [
                     }
                 });
                 if (hasDefaultExport) {
-                    exports.push(`default: __from(${p7}).default`);
+                    exports.push('default:__from(' + p7 + ').default');
                 }
-                return `;(function(){` +
-                    `var {${params}} = __from(${p7});` +
-                    `__export = {${exports.join()}}` +
-                `}())`;
+                return ';(function(){' +
+                    'const{' + params + '}=__from(' + p7 + ');' +
+                    '__export={' + exports.join() + '}' +
+                '}())';
             }
             // MATCH: export { name1, variable2 as name2, …, nameN };
             const params = p5.replace(aliasPattern, '$2:$1');
-            return `__export = {${params}}`;
+            return '__export={' + params + '}';
         },
     },
     {
@@ -140,27 +140,27 @@ export const patternAndReplacers: { p: RegExp, r: any }[] = [
             if (p2) {
                 // MATCH: import "module-name";
                 moduleSpecifiers.push(p2);
-                return `__from(${p2})`;
+                return '__from(' + p2 + ')';
             }
             moduleSpecifiers.push(p10);
             if (p4) {
                 // MATCH: import { e1, e2, e3 as alias } from "module-name";
                 const params = p4.replace(aliasPattern, '$1:$2');
-                return `var {${params}} = __from(${p10})`;
+                return 'const{' + params + '}=__from(' + p10 + ')';
             } else if (p5) {
                 // MATCH: import * as name from "module-name";
-                return `var ${p5} = __from(${p10})`;
+                return 'var ' + p5 + '=__from(' + p10 + ')';
             } else if (p6) {
                 if (p8) {
                     // MATCH: import defaultExport, { export [ , [...] ] } from "module-name";
                     const params = p8.replace(aliasPattern, '$1:$2');
-                    return `var ${p6} = __from(${p10}).default, {${params}} = __from(${p10})`;
+                    return 'const{' + params + '}=__from(' + p10 + '),' + p6 + '=__from(' + p10 + ').default';
                 } else if (p9) {
                     // MATCH: import defaultExport, * as name from "module-name";
-                    return `var ${p9} = __from(${p10}), ${p6} = ${p9}.default`;
+                    return 'var ' + p9 + '=__from(' + p10 + '),' + p6 + '=' + p9 + '.default';
                 } else {
                     // MATCH: import defaultExport from "module-name";
-                    return `var ${p6} = __from(${p10}).default`;
+                    return 'var ' + p6 + '=__from(' + p10 + ').default';
                 }
             }
         },
