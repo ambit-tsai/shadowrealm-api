@@ -62,6 +62,7 @@ function createRealmRecordInContext({
     const { replace } = String.prototype;
     const intrinsics = {} as GlobalObject;
     const globalObject = {} as GlobalObject;
+    let undefinedVar;
 
     // Handle window object
     for (const key of getOwnPropertyNames(win) as any[]) {
@@ -76,10 +77,10 @@ function createRealmRecordInContext({
         if (descriptor.configurable) {
             delete win[key];
         } else if (descriptor.writable) {
-            win[key] = undefined as any;
+            win[key] = undefinedVar as any;
         } else if (!isReserved) {
             // Intercept properties that cannot be deleted
-            defineProperty(globalObject, key, { value: undefined });
+            defineProperty(globalObject, key, { value: undefinedVar });
         }
     }
     
@@ -92,7 +93,7 @@ function createRealmRecordInContext({
     // Intercept the props of EventTarget.prototype
     for (const key of getOwnPropertyNames(intrinsics.EventTarget.prototype)) {
         if (key !== 'constructor') {
-            defineProperty(globalObject, key, { value: undefined });
+            defineProperty(globalObject, key, { value: undefinedVar });
         }
     }
     
