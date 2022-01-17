@@ -106,7 +106,7 @@ function createRealmRecordInContext({
     const esm = new ESModule(realmRec);
     realmRec.esm = esm;
     defineProperty(globalObject, '__from', {
-        value: (specifier: string) => esm.get(specifier),
+        value: (specifier: string, base: string) => esm.get(specifier, base),
     });
     defineProperty(globalObject, '__export', {
         set: val => assign(esm.exports, val),
@@ -115,7 +115,7 @@ function createRealmRecordInContext({
         set: val => esm.exports!.default = val,
     });
     defineProperty(globalObject, '__import', {
-        value: (specifier: string) => esm.import(specifier),
+        value: (specifier: string, base: string) => esm.import(specifier, base),
     });
 
     return realmRec;

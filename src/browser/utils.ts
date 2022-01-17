@@ -156,7 +156,7 @@ function wrappedFunctionInContext(this: any) {
 }
 
 
-export function wrapError(error: any, { intrinsics }: RealmRecord) {
+export function wrapError(error: any, { intrinsics }: RealmRecord): never {
     if (shared.debug) {
         console.log('[DEBUG]');
         console.error(error);
@@ -188,3 +188,11 @@ export { assign };
 
 
 export const URL = topGlobal.URL || topGlobal.webkitURL;
+
+export function createUrl(url: string | URL, base: string | URL, realmRec: RealmRecord): URL {
+    try {
+        return new URL(url, base);
+    } catch (error: any) {
+        throw new realmRec.intrinsics.TypeError(error.message);
+    }
+}

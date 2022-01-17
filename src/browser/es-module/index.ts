@@ -1,13 +1,13 @@
 import type { RealmRecord } from '../RealmRecord';
-import { shared, topGlobal, wrapError, URL } from '../utils';
-import { exportedNames, moduleSpecifiers, patternAndReplacers } from './helpers';
+import { shared, topGlobal, wrapError, URL, createUrl } from '../utils';
+import { transform } from './helpers';
 
 
 export default class ESModule {
     realmRec: RealmRecord;
     cache: Record<string, {
         exports: object,
-        promise?: Promise<any>,
+        promise?: Promise<string>,
     }> = {};
     exports?: Record<PropertyKey, any>;
     
@@ -15,82 +15,90 @@ export default class ESModule {
         this.realmRec = realmRec;
     }
 
-    get(specifier: string): object {
-        if (this.cache[specifier]) {
-            return this.cache[specifier].exports;
+    get(url: string, base: string): object {
+        const ctx = this;
+        const { href } = createUrl(url, base, ctx.realmRec);
+        const module = ctx.cache[href];
+        if (module && module.exports) {
+            return module.exports;
         }
-        throw new this.realmRec.intrinsics.Error('Module does not exist');
+        throw new ctx.realmRec.intrinsics.Error('Module does not exist');
     }
 
-    import(specifier: string, realmRec = this.realmRec): Promise<object> {
-        const { href } = new URL(specifier + '', location.href);
-        const { Promise } = realmRec.intrinsics;
-        let module = this.cache[href];
-        if (!module) {
-            module = this.cache[href] = {} as any;
+    import(specifier: string, base = location.href, realmRec?: RealmRecord): Promise<object> {
+        const ctx = this;
+        if (!realmRec) {
+            realmRec = ctx.realmRec;
         }
-        if (module.exports) {
-            return Promise.resolve(module.exports);
-        }
-        return new Promise((resolve, reject) => {
-            module.promise = fetch(href, {
-                credentials: 'same-origin',
-            })
-            .then((response: Response) => {
-                return response.text().then((sourceText: string) => {
-                    const [text, froms] = this.transform(sourceText);
-                    const modules = [];
-                    for (let name of froms) {
-                        name = name.substring(1, name.length - 1);
-                        const module = this.cache[name] || {};
-                        modules.push(module.exports || module.promise || this.import(name));
+        const { href } = createUrl(specifier, base, realmRec);
+        return new realmRec.intrinsics.Promise((resolve, reject) => {
+            ctx.load(href)
+                .then(result => {
+                    resolve(typeof result === 'string' ? ctx.eval(href, result) : result);
+                })
+                .catch(error => {
+                    try {
+                        wrapError(error, realmRec!);
+                    } catch (newError) {
+                        reject(newError);
                     }
-                    return Promise.all(modules).then(() => 'var __meta={url:"' + response.url + '"};'+ text);
                 });
-            })
-            .then((text: string) => {
-                if (shared.debug) {
-                    console.log('[DEBUG]', href, '\n' + text);
-                }
-                const exports = Object.create(null);
-                if (topGlobal.Symbol?.toStringTag) {
-                    Object.defineProperty(exports, Symbol.toStringTag, {
-                        value: 'Module',
-                    });
-                }
-                this.exports = exports;
-                this.realmRec.globalObject.eval(text);
-                this.exports = undefined;
-                resolve(exports);
-                module.exports = exports;
-                delete module.promise;
-            })
-            .catch(error => {
-                try {
-                    wrapError(error, realmRec);
-                } catch (newError) {
-                    reject(newError);
-                }
-            });
         });
     }
 
-    transform(sourceText: string) {
-        exportedNames.length = 0;
-        moduleSpecifiers.length = 0;
-        for (const { p, r } of patternAndReplacers) {
-            sourceText = sourceText.replace(p, r);
+    load(href: string): Promise<string | object> {
+        const ctx = this;
+        let module = ctx.cache[href];
+        if (!module) {
+            module = ctx.cache[href] = {} as any;
         }
-        if (exportedNames.length) {
-            for (let i = exportedNames.length - 1; i >=0; --i) {
-                exportedNames[i] += ':' + exportedNames[i];
+        if (module.exports) {
+            return Promise.resolve(module.exports);
+        } else if (module.promise) {
+            return module.promise.then(() => module.exports);
+        }
+        module.promise = fetch(href, {
+            credentials: 'same-origin',
+        })
+        .then(response => response.text())
+        .then(sourceText => {
+            const [text, froms] = transform(sourceText);
+            const promises: Promise<any>[] = [];
+            for (let i = 0, { length } = froms; i < length; ++i) {
+                const { href: subHref } = new URL(froms[i], href);
+                froms[i] = subHref;
+                promises.push(ctx.load(subHref).catch(console.error));
             }
-            sourceText += ';__export={' + exportedNames.join() + '}';
+            return Promise.all(promises).then(results => {
+                for (let i = 0, { length } = results; i < length; ++i) {
+                    if (typeof results[i] === 'string') {
+                        ctx.eval(froms[i], results[i]);
+                    }
+                }
+                return 'var __meta={url:"' + href + '"};'+ text;
+            });
+        });
+        return module.promise;
+    }
+
+    eval(href: string, text: string): object {
+        if (shared.debug) {
+            console.log('[DEBUG]\n', text);
         }
-        return [
-            sourceText,
-            moduleSpecifiers.slice(),
-        ] as const;
+        const exports = Object.create(null);
+        if (topGlobal.Symbol?.toStringTag) {
+            Object.defineProperty(exports, Symbol.toStringTag, {
+                value: 'Module',
+            });
+        }
+        const ctx = this;
+        ctx.exports = exports;
+        ctx.realmRec.globalObject.eval(text);
+        ctx.exports = undefined;
+        const module = ctx.cache[href];
+        module.exports = exports;
+        delete module.promise;
+        return exports;
     }
 
 }

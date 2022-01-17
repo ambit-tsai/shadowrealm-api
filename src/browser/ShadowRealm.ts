@@ -76,11 +76,12 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
     const { replace } = String.prototype;
     
     const Ctor = function ShadowRealm(this: BuiltinShadowRealm) {
-        if (!(this instanceof ShadowRealm)) {
+        var ctx = this;
+        if (!(ctx instanceof ShadowRealm)) {
             throw new TypeError('Constructor requires a new operator');
         }
-        const realmRec = utils.createRealmRecord(globalRealmRec, utils, this);
-        defineProperty(this, '__realm', { value: realmRec });
+        const realmRec = utils.createRealmRecord(globalRealmRec, utils, ctx);
+        defineProperty(ctx, '__realm', { value: realmRec });
     };
 
     // `__debug` and `__shims` are enabled only on the top window
@@ -114,7 +115,7 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
     function importValue(this: BuiltinShadowRealm, specifier: string, bindingName: string) {
         specifier = String(specifier);
         bindingName = String(bindingName);
-        return utils.safeApply(then, this.__realm.esm.import(specifier, globalRealmRec), [
+        return utils.safeApply(then, this.__realm.esm.import(specifier, undefined, globalRealmRec), [
             (module: Record<PropertyKey, any>) => {
                 if (!(bindingName in module)) {
                     throw new TypeError('"'+specifier+'" has no export named "'+bindingName+'"');
