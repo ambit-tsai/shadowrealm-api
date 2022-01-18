@@ -113,7 +113,7 @@ function createRealmRecordInContext({
         set: val => assign(esm.exports, val),
     });
     defineProperty(globalObject, '__default', {
-        set: val => esm.exports!.default = val,
+        set: val => esm.exports.default = val,
     });
     defineProperty(globalObject, '__import', {
         value: (specifier: string, base: string) => esm.import(specifier, base),

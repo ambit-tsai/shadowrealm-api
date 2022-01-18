@@ -178,8 +178,11 @@ if (!assign) {
     assign = function (target: Record<PropertyKey, any>) {
         const args = arguments;
         for (let i = 1, { length } = args; i < length; ++i) {
-            for (const key of keys(args[i])) {
-                target[key] = args[i][key];
+            const source = args[i];
+            if (source && typeof source === 'object') {
+                for (const key of keys(source)) {
+                    target[key] = source[key];
+                }
             }
         }
         return target;

@@ -9,7 +9,7 @@ export default class ESModule {
         exports: object,
         promise?: Promise<string>,
     }> = {};
-    exports?: Record<PropertyKey, any>;
+    exports: Record<PropertyKey, any> = {};
     
     constructor(realmRec: RealmRecord) {
         this.realmRec = realmRec;
@@ -94,7 +94,7 @@ export default class ESModule {
         const ctx = this;
         ctx.exports = exports;
         ctx.realmRec.globalObject.eval(text);
-        ctx.exports = undefined;
+        ctx.exports = {};
         const module = ctx.cache[href];
         module.exports = exports;
         delete module.promise;
