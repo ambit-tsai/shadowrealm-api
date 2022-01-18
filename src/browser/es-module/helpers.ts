@@ -129,8 +129,8 @@ const patternAndReplacers: { p: RegExp, r: any }[] = [
                 moduleSpecifiers.push(e20);
                 const exports: string[] = [];
                 e18.replace(/([^\s,]+)(\s+as\s+([^\s,]+))?/g, (m: string, p1: string, p2:string, p3:string) => {
-                    exports.push((p3 || p1) + ':' + 'm.' + p1);
-                    return  m;
+                    exports.push((p3 || p1) + ':m.' + p1);
+                    return m;
                 });
                 return ';(function(){' +
                     'var m=__from(' + e20 + ',__meta.url);' +
