@@ -115,12 +115,13 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
     function importValue(this: BuiltinShadowRealm, specifier: string, bindingName: string) {
         specifier = String(specifier);
         bindingName = String(bindingName);
-        return utils.safeApply(then, this.__realm.esm.import(specifier, undefined, globalRealmRec), [
+        const { __realm } = this;
+        return utils.safeApply(then, __realm.esm.import(specifier, undefined, globalRealmRec), [
             (module: Record<PropertyKey, any>) => {
                 if (!(bindingName in module)) {
                     throw new TypeError('"'+specifier+'" has no export named "'+bindingName+'"');
                 }
-                return utils.getWrappedValue(globalRealmRec, module[bindingName], this.__realm);
+                return utils.getWrappedValue(globalRealmRec, module[bindingName], __realm);
             },
         ]);
     }
