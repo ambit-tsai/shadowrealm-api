@@ -86,13 +86,14 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
 
     // `__debug` and `__shims` are enabled only on the top window
     if (!globalRealmRec.intrinsics.top) {
+        const { shared } = utils;
         defineProperty(Ctor, '__debug', {
-            get: () => utils.shared.debug,
-            set: val => utils.shared.debug = val,
+            get: () => shared.debug,
+            set: val => shared.debug = val,
         });
         defineProperty(Ctor, '__shims', {
-            get: () => utils.shared.shims,
-            set: val => utils.shared.shims = val,
+            get: () => shared.shims,
+            set: val => shared.shims = val,
         });
     }
     
