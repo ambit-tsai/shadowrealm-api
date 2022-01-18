@@ -194,6 +194,6 @@ export function createUrl(url: string | URL, base: string | URL, realmRec: Realm
     try {
         return new URL(url, base);
     } catch (error: any) {
-        throw new realmRec.intrinsics.TypeError(error.message);
+        throw new realmRec.intrinsics[error.name as 'TypeError'](error.message);
     }
 }
