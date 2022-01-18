@@ -1,5 +1,5 @@
 import type { RealmRecord } from '../RealmRecord';
-import { console, shared, topGlobal, wrapError, URL, createUrl } from '../utils';
+import { console, Object, shared, topGlobal, wrapError, URL, createUrl } from '../utils';
 import { transform } from './helpers';
 
 

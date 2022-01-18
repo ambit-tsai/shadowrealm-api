@@ -73,7 +73,7 @@ export type GlobalObject = Omit<typeof window, 'globalThis'> & {
 };
 
 export const topGlobal: GlobalObject = window as any;
-export const console = topGlobal.console;
+export const { console, Object } = topGlobal;
 
 
 export const shared = {

@@ -10,6 +10,7 @@ import {
     wrapError,
     GlobalObject,
     shared,
+    Object,
 } from './utils';
 
 
