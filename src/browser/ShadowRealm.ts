@@ -118,7 +118,7 @@ function createShadowRealmInContext(globalRealmRec: RealmRecord, utils: Utils) {
         specifier = String(specifier);
         bindingName = String(bindingName);
         const { __realm } = this;
-        return utils.safeApply(then, __realm.esm.import(specifier, undefined, globalRealmRec), [
+        return utils.safeApply(then, __realm.import(specifier, undefined, globalRealmRec), [
             (module: Record<PropertyKey, any>) => {
                 if (!(bindingName in module)) {
                     throw new TypeError('"'+specifier+'" has no export named "'+bindingName+'"');

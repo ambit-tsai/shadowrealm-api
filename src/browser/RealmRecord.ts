@@ -5,7 +5,8 @@ import ESModule from './es-module';
 export interface RealmRecord {
     intrinsics: GlobalObject;
     globalObject: GlobalObject;
-    esm: ESModule;
+    esm?: ESModule;
+    import(specifier: string, base?: string, realmRec?: RealmRecord): Promise<object>;
 }
 
 
@@ -55,6 +56,7 @@ function createRealmRecordInContext({
     safeApply,
     dynamicImportPattern,
     dynamicImportReplacer,
+    shared,
 }: Utils): RealmRecord {
     const win = window;
     const { Object, String } = win;
@@ -105,7 +107,7 @@ function createRealmRecordInContext({
 
     // Add helpers for ES Module
     const esm = new ESModule(realmRec);
-    realmRec.esm = esm;
+    realmRec.import = (specifier, base, realmRec) => esm.import(specifier, base, realmRec);
     defineProperty(globalObject, '__from', {
         value: (specifier: string, base: string) => esm.get(specifier, base),
     });
@@ -116,8 +118,11 @@ function createRealmRecordInContext({
         set: val => esm.exports.default = val,
     });
     defineProperty(globalObject, '__import', {
-        value: (specifier: string, base: string) => esm.import(specifier, base),
+        value: realmRec.import,
     });
+    if (shared.debug) {
+        realmRec.esm = esm;
+    }
 
     return realmRec;
 
