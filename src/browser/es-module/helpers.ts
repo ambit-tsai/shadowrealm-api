@@ -6,8 +6,8 @@ const exportedNames: string[] = [];
  * Syntax:
  *   import("module-name");  =>  __import("module-name");
  */
-export const dynamicImportPattern = /\bimport\s*(\(|\/[/*])/g;
-export const dynamicImportReplacer = (m: string) => '__' + m;
+export const dynamicImportPattern = /(^|[^.$])(\bimport\s*(\(|\/[/*]))/g;
+export const dynamicImportReplacer = '$1__$2';
 
 
 const exportAndImportPattern = '' +
