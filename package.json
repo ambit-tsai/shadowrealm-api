@@ -1,6 +1,6 @@
 {
   "name": "shadowrealm-api",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "ShadowRealm polyfill for browser",
   "author": {
     "name": "Ambit Tsai",
@@ -39,7 +39,6 @@
     "realm",
     "realms",
     "sandbox",
-    "api",
     "polyfill",
     "ponyfill",
     "shim",

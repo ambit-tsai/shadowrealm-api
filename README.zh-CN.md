@@ -67,18 +67,22 @@ export { obj, fn };
 ## 兼容性
 |IE|Edge|Firefox|Chrome|Safari|Opera|
 |:-:|:-:|:-:|:-:|:-:|:-:|
-|10<sup>[1][2][3]</sup>|12<sup>[1][2][3]</sup>|19<sup>[1][2][3]</sup>|19<sup>[1][2][3]</sup>|6<sup>[1][2][3]</sup>|15<sup>[1][2][3]</sup>|
-||14|29<sup>[1][3]</sup>|32<sup>[1][3]</sup>|8<sup>[3]</sup>|19<sup>[1][3]</sup>|
-|||41|49|10.1|36|
+|10<sup>[1][2][3]</sup>|12<sup>[1][2][3]</sup>|4<sup>[1][2][3][4]</sup>|13<sup>[1][2][3][4]</sup>|6<sup>[1][2][3]</sup>|12.1<sup>[1][2][3][4]</sup>|
+||14|19<sup>[1][2][3]</sup>|19<sup>[1][2][3]</sup>|8<sup>[3]</sup>|15<sup>[1][2][3]</sup>|
+|||29<sup>[1][3]</sup>|32<sup>[1][3]</sup>|10.1|19<sup>[1][3]</sup>|
+|||41|49||36|
 
 > Notes:
 > 1. ESM 语句不支持解构赋值；
 > 1. ShadowRealm 中需要`Promise`垫片；
 > 1. 顶层作用域需要`fetch`垫片；
+> 1. 顶层作用域需要`URL`垫片；
 
-使用 fetch 垫片:
+使用 fetch 或 URL 垫片:
 ```js
-import "your fetch polyfill";
+import "fetch polyfill";
+import "URL polyfill";
+import "shadowrealm-api/browser/polyfill.mjs";
 // Your codes
 ```
 使用 Promise 垫片:
