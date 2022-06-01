@@ -59,7 +59,7 @@ function createRealmRecordInContext({
     shared,
 }: Utils): RealmRecord {
     const win = window;
-    const { Object, String } = win;
+    const { Object, String, Function: RawFunction } = win;
     const { defineProperty, getOwnPropertyNames } = Object;
     const { replace } = String.prototype;
     const intrinsics = {} as GlobalObject;
@@ -146,7 +146,7 @@ function createRealmRecordInContext({
 
 
     function createEval() {
-        const safeEval = intrinsics.Function('with(this)return eval(arguments[0])');
+        const safeEval = RawFunction('with(this)return eval(arguments[0])');
         return {
             eval(x: string) {
                 // `'use strict'` is used to enable strict mode
@@ -164,7 +164,6 @@ function createRealmRecordInContext({
 
 
     function createFunction(): FunctionConstructor {
-        const RawFunction = intrinsics.Function;
         const { toString } = RawFunction;
         function Function() {
             const rawFn = safeApply(RawFunction, null, arguments);
