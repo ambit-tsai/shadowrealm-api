@@ -114,7 +114,7 @@ type ParamsForWrappedFunction = [
 ];
 
 
-const codeOfWrappedFunction = 'return ' + wrappedFunctionInContext.toString();
+const codeOfWrappedFunction = wrappedFunctionInContext.toString().replace(/^function [^(]*/, '');
 
 
 function createWrappedFunction(
@@ -122,7 +122,7 @@ function createWrappedFunction(
     targetFunction: Function,
     targetRealm: RealmRecord,
 ) {
-    return callerRealm.intrinsics.Function('params', codeOfWrappedFunction)([
+    const wrappedFunction= callerRealm.intrinsics.Function('params', 'return function ' + targetFunction.name + codeOfWrappedFunction)([
         callerRealm,
         targetFunction,
         targetRealm,
@@ -130,6 +130,10 @@ function createWrappedFunction(
         safeApply,
         wrapError,
     ] as ParamsForWrappedFunction);
+    Object.defineProperty(wrappedFunction, 'length', {
+        value: targetFunction.length
+    });
+    return wrappedFunction;
 }
 
 
