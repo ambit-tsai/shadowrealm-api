@@ -20,6 +20,7 @@ export const globalReservedProperties = [
     'AggregateError',
     'Array',
     'ArrayBuffer',
+    'Atomics',
     'BigInt',
     'BigInt64Array',
     'BigUint64Array',
