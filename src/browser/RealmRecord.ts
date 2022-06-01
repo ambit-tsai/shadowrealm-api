@@ -92,10 +92,12 @@ function createRealmRecordInContext({
             value: Object.seal(Object.create(null)),
         });
     }
-    // Intercept the props of EventTarget.prototype
-    for (const key of getOwnPropertyNames(intrinsics.EventTarget.prototype)) {
-        if (key !== 'constructor') {
-            defineProperty(globalObject, key, { value: undefinedVar });
+    if (intrinsics.EventTarget) {
+        // Intercept the props of EventTarget.prototype
+        for (const key of getOwnPropertyNames(intrinsics.EventTarget.prototype)) {
+            if (key !== 'constructor') {
+                defineProperty(globalObject, key, { value: undefinedVar });
+            }
         }
     }
     
