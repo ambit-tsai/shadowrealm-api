@@ -74,12 +74,11 @@ export type GlobalObject = Omit<typeof window, 'globalThis'> & {
 };
 
 export const topGlobal: GlobalObject = window as any;
-export const { console, Object } = topGlobal;
+export const { console, Object, URL } = topGlobal;
 
 
 export const shared = {
     debug: false,
-    shims: [] as string[],
 };
 
 
@@ -195,8 +194,6 @@ if (!assign) {
 }
 export { assign }; 
 
-
-export const URL = topGlobal.URL || topGlobal.webkitURL;
 
 export function createUrl(url: string | URL, base: string | URL, realmRec: RealmRecord): URL {
     try {

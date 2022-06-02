@@ -37,11 +37,6 @@ export function createRealmRecord(
     const iframe = document.createElement('iframe');
     iframe.name = 'ShadowRealm';
     document.head.appendChild(iframe);
-    for (const src of utils.shared.shims) {
-        const el = document.createElement('script');
-        el.src = src;
-        iframe.contentDocument!.head.appendChild(el);
-    }
     const realmRec = (iframe.contentWindow as GlobalObject).eval(codeOfCreateRealmRecord)(utils);
     waitForGarbageCollection(realmRec, shadowRealm, iframe);
     return realmRec;
