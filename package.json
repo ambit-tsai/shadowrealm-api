@@ -11,7 +11,7 @@
   "module": "browser/index.mjs",
   "scripts": {
     "build": "node scripts/build.js",
-    "test": "test262-harness --hostType=chrome --hostPath=\"C:\\Users\\Ambit Tsai\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe\" --transformer=test/transformer.js --prelude=dist/browser/polyfill.umd.js --prelude=test/browser-helpers.js --test262Dir=test \"test/common/**/*.js\"",
+    "test": "test262-harness --hostType=chrome --hostPath=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --prelude=test/helpers.js --prelude=dist/browser/polyfill.umd.js --transformer=test/transformer.js --test262Dir=test/test262 test/test262/test/built-ins/ShadowRealm/**/*.js",
     "test:docs": "vite -c docs-src/vite.config.ts",
     "build:docs": "vite build -c docs-src/vite.config.ts",
     "preview:docs": "vite preview -c docs-src/vite.config.ts"
