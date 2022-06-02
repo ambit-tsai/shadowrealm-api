@@ -130,7 +130,7 @@ function createWrappedFunction(
         wrapError,
     ] as ParamsForWrappedFunction);
     Object.defineProperty(wrappedFunction, 'length', {
-        value: targetFunction.length
+        value: typeof targetFunction.length === 'number' && targetFunction.length > 0 ? targetFunction.length : 0,
     });
     return wrappedFunction;
 }
