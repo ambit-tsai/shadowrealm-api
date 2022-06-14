@@ -76,7 +76,7 @@ const properties = [
   'ReferenceError',
   'RegExp',
   'Set',
-  'SharedArrayBuffer',
+  // 'SharedArrayBuffer',
   'String',
   'Symbol',
   'SyntaxError',
