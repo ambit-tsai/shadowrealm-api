@@ -113,7 +113,7 @@ type ParamsForWrappedFunction = [
 ];
 
 
-const codeOfWrappedFunction = wrappedFunctionInContext.toString().replace(/^function [^(]*/, '');
+const codeOfWrappedFunction = wrappedFunctionInContext.toString().replace(/^[^(]+/, '');
 
 
 function createWrappedFunction(
@@ -173,14 +173,15 @@ export function wrapError(error: any, { intrinsics }: RealmRecord): never {
         console.log('[DEBUG]');
         console.error(error);
     }
-    const isObject = typeof error === 'object' && error;
-    if (isObject) {
-        if (error.name === 'SyntaxError') {
-            throw new intrinsics.SyntaxError(error.message);
+    if (error && typeof error === 'object') {
+        if (error._) {
+            throw new intrinsics.TypeError('Cross-Realm Error: ' + error._.name + ': ' + error._.message);
+        } else if (typeof error.name === 'string' && /Error$/.test(error.name)) {
+            // @ts-ignore
+            throw new (intrinsics[error.name] || intrinsics.Error)(error.message);
         }
-        throw new intrinsics.TypeError('Cross-Realm Error: ' + error.name + ': ' + error.message)
     }
-    throw new intrinsics.TypeError('Cross-Realm Error: ' + error);
+    throw new intrinsics.Error(error);
 }
 
 

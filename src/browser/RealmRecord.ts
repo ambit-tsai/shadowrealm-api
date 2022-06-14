@@ -143,12 +143,16 @@ function createRealmRecordInContext({
 
 
     function createEval() {
+        const { toString } = RawFunction;
         const safeEval = RawFunction('with(this)return eval(arguments[0])');
         return {
             eval(x: string) {
+                x = safeApply(toString, RawFunction(x), []);
+                x = safeApply(replace, x, [/^[^{]+/, '']);
                 // `'use strict'` is used to enable strict mode
-                // `undefined`  is used to ensure that the return value remains unchanged 
-                x = safeApply(replace, '"use strict";undefined;' + x, [
+                // `undefined`  is used to ensure that the return value remains unchanged
+                x = '"use strict";undefined;try' + x + 'catch(e){throw{_:e}}';
+                x = safeApply(replace, x, [
                     dynamicImportPattern,
                     dynamicImportReplacer,
                 ]);
