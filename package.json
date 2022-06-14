@@ -10,9 +10,9 @@
   "main": "browser/index.umd.js",
   "module": "browser/index.mjs",
   "scripts": {
+    "start": "vite -c docs-src/vite.config.ts",
+    "test": "test262-harness --hostType=chrome --hostPath=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --prelude=test/helpers.js --prelude=dist/browser/polyfill.umd.js --transformer=test/transformer.js --test262Dir=test/test262 test/cases/**/*.js",
     "build": "node scripts/build.js",
-    "test": "test262-harness --hostType=chrome --hostPath=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --prelude=test/helpers.js --prelude=dist/browser/polyfill.umd.js --transformer=test/transformer.js --test262Dir=test/test262 test/test262/test/built-ins/ShadowRealm/**/*.js",
-    "test:docs": "vite -c docs-src/vite.config.ts",
     "build:docs": "vite build -c docs-src/vite.config.ts",
     "preview:docs": "vite preview -c docs-src/vite.config.ts"
   },
