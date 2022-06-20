@@ -1,4 +1,4 @@
-import type { BuiltinShadowRealm, RealmRecord } from './type';
+import type { RealmRecord, ShadowRealm, ShadowRealmConstructor } from './type';
 import type { Utils } from '.';
 
 export function defineShadowRealmCtor(
@@ -15,7 +15,7 @@ export function defineShadowRealmCtor(
 export function createShadowRealmCtor(
     globalRealmRec: RealmRecord,
     utils: Utils
-) {
+): ShadowRealmConstructor {
     const createInContext = globalRealmRec.intrinsics.eval(
         '(' + createShadowRealmCtorInContext.toString() + ')'
     );
@@ -47,7 +47,7 @@ function createShadowRealmCtorInContext(
     /**
      * ShadowRealm Class
      */
-    const Constructor = function ShadowRealm(this: BuiltinShadowRealm) {
+    const Constructor = function ShadowRealm(this: ShadowRealm) {
         if (!(this instanceof Constructor)) {
             throw new TypeError('Constructor requires a new operator');
         }
@@ -75,7 +75,7 @@ function createShadowRealmCtorInContext(
         });
     }
 
-    function evaluate(this: BuiltinShadowRealm, sourceText: string) {
+    function evaluate(this: ShadowRealm, sourceText: string) {
         if (!this?.__realm?.intrinsics) {
             throw new TypeError('this is not a ShadowRealm object');
         }
@@ -91,7 +91,7 @@ function createShadowRealmCtorInContext(
         try {
             result = evalWithCatch(sourceText, this.__realm);
         } catch (error) {
-            throw wrapError(error, globalRealmRec, true);
+            throw wrapError(error, globalRealmRec, TRUE);
         }
         return getWrappedValue(globalRealmRec, result, this.__realm, utils);
     }
@@ -110,7 +110,7 @@ function createShadowRealmCtorInContext(
     }
 
     function importValue(
-        this: BuiltinShadowRealm,
+        this: ShadowRealm,
         specifier: string,
         bindingName: string
     ) {
