@@ -1,5 +1,5 @@
 import './index.css';
-import '../src/browser/polyfill'
+import '../src/polyfill';
 
 const code = `
 class ShadowRealm {
