@@ -28,7 +28,7 @@ const realm = new ShadowRealm();
 
 ### Po**l**yfill: 修补全局对象
 ```javascript
-import 'shadowrealm-api/browser/polyfill.mjs'
+import 'shadowrealm-api/dist/polyfill.mjs'
 
 const realm = new ShadowRealm();
 ```
@@ -67,18 +67,21 @@ export { obj, fn };
 ## 兼容性
 |IE|Edge|Firefox|Chrome|Safari|Opera|
 |:-:|:-:|:-:|:-:|:-:|:-:|
-||14|29<sup>[1][2]</sup>|32<sup>[1][2]</sup>|8<sup>[2]</sup>|19<sup>[1][2]</sup>|
-|||41|49|10.1|36|
+||14|29<sup>[1][2]</sup>|32<sup>[1][2]</sup>|8<sup>[2][3]</sup>|19<sup>[1][2]</sup>|
+|||41|49|10.1<sup>[3]</sup>|36|
+|||||14.1||
 
 > Notes:
 > 1. ESM 语句不支持解构赋值；
 > 1. 顶层作用域需要`fetch`垫片；
+> 1. 顶层作用域需要`URL`垫片；
 
-使用 fetch 或 URL 垫片:
+使用垫片:
 ```js
 import "fetch polyfill";
-import "shadowrealm-api/browser/polyfill.mjs";
-// Your codes
+import "URL polyfill";
+import "shadowrealm-api/dist/polyfill.mjs";
+// 你的代码
 ```
 
 

@@ -1,0 +1,13 @@
+.vscode/
+docs/
+docs-src/
+node_modules/
+src/
+test/
+.gitignore
+.gitmodules
+.prettierignore
+.npmrc
+.prettierrc.js
+chromedriver.exe
+geckodriver.exe
