@@ -1,4 +1,8 @@
-import type { RealmRecord, ShadowRealm, ShadowRealmConstructor } from './type';
+import type {
+    BuiltinShadowRealm,
+    RealmRecord,
+    ShadowRealmConstructor,
+} from './type';
 import type { Utils } from '.';
 
 export function defineShadowRealmCtor(
@@ -48,7 +52,7 @@ function createShadowRealmCtorInContext(
     /**
      * ShadowRealm Class
      */
-    const Constructor = function ShadowRealm(this: ShadowRealm) {
+    const Constructor = function ShadowRealm(this: BuiltinShadowRealm) {
         if (!(this instanceof Constructor)) {
             throw new TypeError('Constructor requires a new operator');
         }
@@ -76,7 +80,7 @@ function createShadowRealmCtorInContext(
         });
     }
 
-    function evaluate(this: ShadowRealm, sourceText: string) {
+    function evaluate(this: BuiltinShadowRealm, sourceText: string) {
         const realmRec = isObject(this) ? this.__realm : ({} as RealmRecord);
         if (!realmRec.intrinsics) {
             throw new TypeError('must be called on ShadowRealm object');
@@ -113,7 +117,7 @@ function createShadowRealmCtorInContext(
     }
 
     function importValue(
-        this: ShadowRealm,
+        this: BuiltinShadowRealm,
         specifier: string,
         bindingName: string
     ) {

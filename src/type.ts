@@ -22,6 +22,9 @@ export interface ShadowRealm {
         specifier: string,
         bindingName: string
     ): Promise<Primitive | Callable>;
+}
+
+export interface BuiltinShadowRealm extends ShadowRealm {
     readonly __realm: RealmRecord;
 }
 
