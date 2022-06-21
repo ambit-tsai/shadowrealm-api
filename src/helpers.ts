@@ -40,7 +40,7 @@ export function replace(
     return apply(replaceOfString, str, args);
 }
 
-function isObject(val: any): val is Record<PropertyKey, any> {
+export function isObject(val: any): val is Record<PropertyKey, any> {
     return val ? typeof val === 'object' : false;
 }
 
@@ -72,13 +72,12 @@ export function wrapError(
         }
         reason = reason._;
     }
+    const { TypeError } = intrinsics;
+    const errType = 'Cross-Realm Error: ';
     if (isObject(reason)) {
-        const error = reason as Error;
-        return new intrinsics.TypeError(
-            'Cross-Realm Error: ' + error.name + ': ' + error.message
-        );
+        return new TypeError(errType + reason.name + ': ' + reason.message);
     }
-    return new intrinsics.TypeError('Cross-Realm Error: ' + reason);
+    return new TypeError(errType + reason);
 }
 
 export function getWrappedValue<T>(
@@ -95,7 +94,7 @@ export function getWrappedValue<T>(
         }
     } else if (isObject(value)) {
         throw new callerRealm.intrinsics.TypeError(
-            'value must be primitive or callable'
+            'need primitive or callable, got ' + value
         );
     }
     return value;

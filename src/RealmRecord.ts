@@ -111,7 +111,7 @@ function createRealmRecordInContext(utils: Utils) {
 
     function createSafeFunction(): FunctionConstructor {
         const { toString } = RawFunction;
-        function Function() {
+        const Ctor = function Function() {
             const rawFn = apply(RawFunction, null, arguments);
             let fnStr = apply(toString, rawFn, []);
             fnStr = replace(fnStr, dynamicImportPattern, dynamicImportReplacer);
@@ -126,9 +126,9 @@ function createRealmRecordInContext(utils: Utils) {
                 const ctx = this === win ? undefined : this;
                 return apply(safeFn, ctx, arguments);
             };
-        }
-        Function.prototype = RawFunction.prototype;
-        Function.prototype.constructor = Function;
-        return Function as any;
+        };
+        Ctor.prototype = RawFunction.prototype;
+        Ctor.prototype.constructor = Ctor;
+        return Ctor as any;
     }
 }

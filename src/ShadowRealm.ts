@@ -39,6 +39,7 @@ function createShadowRealmCtorInContext(
         dynamicImportPattern,
         dynamicImportReplacer,
         getWrappedValue,
+        isObject,
         replace,
         wrapError,
     } = utils;
@@ -76,8 +77,9 @@ function createShadowRealmCtorInContext(
     }
 
     function evaluate(this: ShadowRealm, sourceText: string) {
-        if (!this?.__realm?.intrinsics) {
-            throw new TypeError('this is not a ShadowRealm object');
+        const realmRec = isObject(this) ? this.__realm : ({} as RealmRecord);
+        if (!realmRec.intrinsics) {
+            throw new TypeError('must be called on ShadowRealm object');
         }
         if (typeof sourceText !== 'string') {
             throw new TypeError('evaluate expects a string');
@@ -89,11 +91,11 @@ function createShadowRealmCtorInContext(
         );
         let result: any;
         try {
-            result = evalWithCatch(sourceText, this.__realm);
+            result = evalWithCatch(sourceText, realmRec);
         } catch (error) {
             throw wrapError(error, globalRealmRec, TRUE);
         }
-        return getWrappedValue(globalRealmRec, result, this.__realm, utils);
+        return getWrappedValue(globalRealmRec, result, realmRec, utils);
     }
 
     function evalWithCatch(x: string, realmRec: RealmRecord) {
@@ -104,9 +106,10 @@ function createShadowRealmCtorInContext(
             replace(x, /[^{]+/, '') +
             'catch(e){throw{_:e}}';
         utils.log(x);
+        const { globalObject } = realmRec;
         // @ts-ignore
-        realmRec.globalObject.eval = realmRec.intrinsics;
-        return apply(realmRec.evalInContext, realmRec.globalObject, [x]);
+        globalObject.eval = realmRec.intrinsics;
+        return apply(realmRec.evalInContext, globalObject, [x]);
     }
 
     function importValue(
@@ -114,16 +117,16 @@ function createShadowRealmCtorInContext(
         specifier: string,
         bindingName: string
     ) {
-        if (!this?.__realm?.intrinsics) {
-            throw new TypeError('this is not a ShadowRealm object');
+        const realmRec = isObject(this) ? this.__realm : ({} as RealmRecord);
+        if (!realmRec.intrinsics) {
+            throw new TypeError('must be called on ShadowRealm object');
         }
         specifier = String(specifier);
         if (typeof bindingName !== 'string') {
             throw new TypeError('bindingName is not string');
         }
-        const { __realm } = this;
         return new Promise((resolve, reject) => {
-            __realm.globalObject
+            realmRec.globalObject
                 .__import(specifier)
                 .then((exports) => {
                     if (!(bindingName in exports)) {
@@ -138,7 +141,7 @@ function createShadowRealmCtorInContext(
                     const wrappedValue = getWrappedValue(
                         globalRealmRec,
                         exports[bindingName],
-                        __realm,
+                        realmRec,
                         utils
                     );
                     resolve(wrappedValue);
