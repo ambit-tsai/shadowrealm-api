@@ -2,6 +2,7 @@
 docs/
 docs-src/
 node_modules/
+scripts/
 src/
 test/
 .gitignore

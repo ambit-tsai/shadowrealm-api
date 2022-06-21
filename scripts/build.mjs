@@ -31,7 +31,6 @@ await bundle.write({
     dir: 'dist',
     banner,
     format: 'esm',
-    entryFileNames: '[name].mjs',
     sourcemap: true,
 });
 

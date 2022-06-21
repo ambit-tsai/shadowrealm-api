@@ -1,13 +1,13 @@
 {
     "name": "shadowrealm-api",
-    "version": "0.8.0",
+    "version": "0.8.1",
     "description": "ShadowRealm polyfill for browser",
     "author": {
         "name": "Ambit Tsai",
         "email": "ambit_tsai@qq.com"
     },
     "license": "Apache-2.0",
-    "main": "dist/index.mjs",
+    "main": "dist/index.js",
     "scripts": {
         "start": "vite -c docs-src/vite.config.ts",
         "test": "test262-harness --hostType=chrome --hostPath=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --prelude=test/helpers.js --prelude=dist/polyfill.umd.js --transformer=test/transformer.js --test262Dir=test/test262 test/cases/**/*.js",
