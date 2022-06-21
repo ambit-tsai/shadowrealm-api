@@ -1,6 +1,6 @@
 import { GLOBAL } from './helpers';
 import { defineShadowRealmCtor } from './ShadowRealm';
-import type { RealmRecord } from './type';
+import type { RealmRecord, ShadowRealmConstructor } from './type';
 import { utils } from '.';
 
 if (!GLOBAL.ShadowRealm) {
@@ -8,4 +8,11 @@ if (!GLOBAL.ShadowRealm) {
         { intrinsics: GLOBAL, globalObject: GLOBAL } as RealmRecord,
         utils
     );
+}
+
+declare global {
+    interface Window {
+        ShadowRealm: ShadowRealmConstructor;
+    }
+    var ShadowRealm: ShadowRealmConstructor;
 }
