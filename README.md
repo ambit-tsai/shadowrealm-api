@@ -27,7 +27,7 @@ const realm = new ShadowRealm();
 
 ### Po**l**yfill: patch up the global object
 ```javascript
-import 'shadowrealm-api/browser/polyfill.mjs'
+import 'shadowrealm-api/dist/polyfill.mjs'
 
 const realm = new ShadowRealm();
 ```
@@ -66,30 +66,21 @@ export { obj, fn };
 ## Compatibility
 |IE|Edge|Firefox|Chrome|Safari|Opera|
 |:-:|:-:|:-:|:-:|:-:|:-:|
-|10<sup>[1][2][3]</sup>|12<sup>[1][2][3]</sup>|4<sup>[1][2][3][4]</sup>|13<sup>[1][2][3][4]</sup>|6<sup>[1][2][3]</sup>|12.1<sup>[1][2][3][4]</sup>|
-||14|19<sup>[1][2][3]</sup>|19<sup>[1][2][3]</sup>|8<sup>[3]</sup>|15<sup>[1][2][3]</sup>|
-|||29<sup>[1][3]</sup>|32<sup>[1][3]</sup>|10.1|19<sup>[1][3]</sup>|
-|||41|49||36|
+||14|29<sup>[1][2]</sup>|32<sup>[1][2]</sup>|8<sup>[2][3]</sup>|19<sup>[1][2]</sup>|
+|||41|49|10.1<sup>[3]</sup>|36|
+|||||14.1||
 
 > Notes:
 > 1. Don't support destructuring assignment in ESM statement;
-> 1. Need `Promise` polyfill in ShadowRealm;
 > 1. Need `fetch` polyfill in top window;
 > 1. Need `URL` polyfill in top window;
 
-Use `fetch` or `URL` polyfill:
+Use polyfills:
 ```js
 import "fetch polyfill";
 import "URL polyfill";
-import "shadowrealm-api/browser/polyfill.mjs";
+import "shadowrealm-api/dist/polyfill.mjs";
 // Your codes
-```
-Use `Promise` polyfill:
-```js
-ShadowRealm.__shims = [
-    'path/to/promise-polyfill.js',
-    'other polyfills',
-];
 ```
 
 

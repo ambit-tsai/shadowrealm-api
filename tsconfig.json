@@ -4,8 +4,8 @@
         "lib": ["DOM", "ESNext"],
         "strict": true,
         "moduleResolution": "node",
+        "declaration": true,
+        "declarationDir": "./dist"
     },
-    "include": [
-        "src/**/*"
-    ],
+    "include": ["src/**/*.ts"]
 }
