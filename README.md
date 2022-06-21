@@ -27,7 +27,7 @@ const realm = new ShadowRealm();
 
 ### Po**l**yfill: patch up the global object
 ```javascript
-import 'shadowrealm-api/dist/polyfill.mjs'
+import 'shadowrealm-api/dist/polyfill'
 
 const realm = new ShadowRealm();
 ```
@@ -79,7 +79,7 @@ Use polyfills:
 ```js
 import "fetch polyfill";
 import "URL polyfill";
-import "shadowrealm-api/dist/polyfill.mjs";
+import "shadowrealm-api/dist/polyfill";
 // Your codes
 ```
 

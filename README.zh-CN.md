@@ -28,7 +28,7 @@ const realm = new ShadowRealm();
 
 ### Po**l**yfill: 修补全局对象
 ```javascript
-import 'shadowrealm-api/dist/polyfill.mjs'
+import 'shadowrealm-api/dist/polyfill'
 
 const realm = new ShadowRealm();
 ```
@@ -80,7 +80,7 @@ export { obj, fn };
 ```js
 import "fetch polyfill";
 import "URL polyfill";
-import "shadowrealm-api/dist/polyfill.mjs";
+import "shadowrealm-api/dist/polyfill";
 // 你的代码
 ```
 
