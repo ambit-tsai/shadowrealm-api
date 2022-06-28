@@ -37,16 +37,8 @@ function createShadowRealmCtorInContext(
 ) {
     const { Function, Promise, String, Symbol, TypeError } =
         globalRealmRec.intrinsics;
-    const {
-        apply,
-        define,
-        dynamicImportPattern,
-        dynamicImportReplacer,
-        getWrappedValue,
-        isObject,
-        replace,
-        wrapError,
-    } = utils;
+    const { apply, define, getWrappedValue, isObject, replace, wrapError } =
+        utils;
     const { toString } = Function;
 
     /**
@@ -88,11 +80,6 @@ function createShadowRealmCtorInContext(
         if (typeof sourceText !== 'string') {
             throw new TypeError('evaluate expects a string');
         }
-        sourceText = replace(
-            sourceText,
-            dynamicImportPattern,
-            dynamicImportReplacer
-        );
         let result: any;
         try {
             result = evalWithCatch(sourceText, realmRec);
@@ -103,7 +90,7 @@ function createShadowRealmCtorInContext(
     }
 
     function evalWithCatch(x: string, realmRec: RealmRecord) {
-        x = replace(x, dynamicImportPattern, dynamicImportReplacer);
+        x = replace(x, utils.dynamicImportPattern, utils.dynamicImportReplacer);
         x = apply(toString, Function(x), []);
         x =
             '"use strict";undefined;try' +
