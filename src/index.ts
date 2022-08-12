@@ -24,5 +24,7 @@ export const utils = helpers.assign(
 
 export type Utils = typeof utils;
 
-export default helpers.GLOBAL.ShadowRealm ||
-    createShadowRealmCtor({ intrinsics: helpers.GLOBAL } as RealmRecord, utils);
+export default createShadowRealmCtor(
+    { intrinsics: helpers.GLOBAL } as RealmRecord,
+    utils
+);
