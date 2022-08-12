@@ -123,7 +123,7 @@ function createRealmRecordInContext(utils: Utils) {
             const wrapFn = RawFunction(fnStr);
             const safeFn: Function = apply(wrapFn, globalObject, []);
             return function (this: any) {
-                const ctx = this === win ? undefined : this;
+                const ctx = this === win ? UNDEFINED : this;
                 return apply(safeFn, ctx, arguments);
             };
         };

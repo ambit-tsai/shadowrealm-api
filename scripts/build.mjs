@@ -2,7 +2,7 @@ import { rm, mkdir } from 'fs/promises';
 import { rollup } from 'rollup';
 import typescript from '@rollup/plugin-typescript';
 import { terser } from 'rollup-plugin-terser';
-import pkg from '../package.json';
+import pkg from '../package.json' assert { type: 'json' };
 
 const banner = `
 /**

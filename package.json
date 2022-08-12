@@ -12,7 +12,7 @@
         "start": "vite -c docs-src/vite.config.ts",
         "test": "test262-harness --hostType=chrome --hostPath=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --prelude=test/helpers.js --prelude=dist/polyfill.umd.js --transformer=test/transformer.js --test262Dir=test/test262 test/cases/**/*.js",
         "test:firefox": "test262-harness --hostType=firefox --hostPath=\"C:\\Program Files\\Mozilla Firefox\\firefox.exe\" --prelude=test/helpers.js --prelude=dist/polyfill.umd.js --transformer=test/transformer.js --test262Dir=test/test262 test/cases/**/*.js",
-        "build": "node --experimental-json-modules scripts/build.mjs",
+        "build": "node scripts/build.mjs",
         "build:docs": "vite build -c docs-src/vite.config.ts",
         "preview:docs": "vite preview -c docs-src/vite.config.ts"
     },
