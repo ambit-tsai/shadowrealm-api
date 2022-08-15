@@ -133,12 +133,13 @@ function wrappedFunctionInContext() {
         RealmRecord,
         Utils
     ];
+    const { getWrappedValue } = utils;
     let result;
     try {
         const args = arguments;
         const wrappedArgs: any[] = [];
         for (let i = 0, { length } = args; i < length; ++i) {
-            const wrappedValue = utils.getWrappedValue(
+            const wrappedValue = getWrappedValue(
                 targetRealm,
                 args[i],
                 callerRealm,
@@ -154,7 +155,7 @@ function wrappedFunctionInContext() {
     } catch (error) {
         throw utils.wrapError(error, callerRealm);
     }
-    return utils.getWrappedValue(callerRealm, result, targetRealm, utils);
+    return getWrappedValue(callerRealm, result, targetRealm, utils);
 }
 
 export const globalReservedProps = [

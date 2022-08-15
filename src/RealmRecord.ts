@@ -59,9 +59,7 @@ function createRealmRecordInContext(utils: Utils) {
         for (const key of getOwnPropertyNames(
             intrinsics.EventTarget.prototype
         )) {
-            if (key !== 'constructor') {
-                define(win, key, { value: UNDEFINED });
-            }
+            define(win, key, { value: UNDEFINED });
         }
     }
 
